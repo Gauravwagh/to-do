@@ -375,26 +375,28 @@ class AttachmentForm(forms.ModelForm):
 
 class MultipleAttachmentForm(forms.Form):
     """Form for uploading multiple attachments at once."""
-    
+
     files = forms.FileField(
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'image/*,application/pdf,.doc,.docx,.txt,.rtf,.odt,audio/*,video/*,.zip,.rar,.7z,.tar,.gz',
+            'multiple': True,
         }),
         help_text='Select multiple files to upload (max 10MB each)'
     )
-    
-    def clean_files(self):
+
+    def clean(self):
+        cleaned_data = super().clean()
         files = self.files.getlist('files')
         if not files:
             raise forms.ValidationError('Please select at least one file.')
-        
+
         max_size = 10 * 1024 * 1024  # 10MB
         for file in files:
             if file.size > max_size:
                 raise forms.ValidationError(f'File "{file.name}" exceeds 10MB limit.')
-        
-        return files
+
+        return cleaned_data
 
 
 

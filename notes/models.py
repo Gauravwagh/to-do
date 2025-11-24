@@ -165,7 +165,7 @@ class NoteAttachment(TimeStampedModel):
                     import mimetypes
                     guessed_type, _ = mimetypes.guess_type(self.file.name)
                     self.file_type = guessed_type or 'application/octet-stream'
-            except:
+            except Exception:
                 self.file_type = 'application/octet-stream'
             
             if not self.original_name:

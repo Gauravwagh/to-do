@@ -36,8 +36,8 @@ class DashboardView(LoginRequiredMixin, ListView):
         pinned_notes = user.notes.filter(is_pinned=True).count()
         archived_notes = user.notes.filter(is_archived=True).count()
         
-        # Todo Statistics
-        user_todos = Todo.objects.filter(note__user=user)
+        # Todo Statistics (include both note-based and standalone todos)
+        user_todos = Todo.objects.filter(user=user)
         total_todos = user_todos.count()
         completed_todos = user_todos.filter(is_completed=True).count()
         pending_todos = user_todos.filter(status='pending').count()
@@ -227,29 +227,6 @@ class NotebookUpdateView(LoginRequiredMixin, UpdateView):
         return response
 
 
-class NotebookDeleteView(LoginRequiredMixin, DeleteView):
-    """Delete notebook."""
-    model = Notebook
-    template_name = 'notes/notebook_confirm_delete.html'
-    success_url = reverse_lazy('notes:notebook_list')
-    
-    def get_queryset(self):
-        return Notebook.objects.filter(user=self.request.user)
-    
-    def delete(self, request, *args, **kwargs):
-        notebook = self.get_object()
-        
-        # Move notes to default notebook
-        default_notebook, created = Notebook.objects.get_or_create(
-            user=request.user,
-            is_default=True,
-            defaults={'name': 'Default', 'description': 'Default notebook'}
-        )
-        
-        notebook.notes.update(notebook=default_notebook)
-        messages.success(request, f'Notebook deleted. Notes moved to {default_notebook.name}.')
-        
-        return super().delete(request, *args, **kwargs)
 
 
 @login_required
@@ -445,6 +422,7 @@ def todo_create(request, note_slug):
         if form.is_valid():
             todo = form.save(commit=False)
             todo.note = note
+            todo.user = request.user
             todo.save()
             form.save_m2m()  # Save tags
             
@@ -530,6 +508,7 @@ def todo_quick_add(request, note_slug):
         if form.is_valid():
             todo = Todo.objects.create(
                 note=note,
+                user=request.user,
                 title=form.cleaned_data['title'],
                 priority=form.cleaned_data['priority']
             )
@@ -806,9 +785,10 @@ def todo_dashboard(request):
         ).distinct()
     
     # Apply sorting
+    sort_field = sort_by.lstrip('-')  # Remove any existing prefix
     if sort_order == 'desc':
-        sort_by = f'-{sort_by}'
-    todos = todos.order_by(sort_by)
+        sort_field = f'-{sort_field}'
+    todos = todos.order_by(sort_field)
     
     # Get filter options
     notebooks = Notebook.objects.filter(user=request.user).order_by('name')
@@ -884,9 +864,10 @@ def standalone_todo_list(request):
         ).distinct()
     
     # Sorting
+    sort_field = sort_by.lstrip('-')  # Remove any existing prefix
     if sort_order == 'desc':
-        sort_by = f'-{sort_by}'
-    todos = todos.order_by(sort_by)
+        sort_field = f'-{sort_field}'
+    todos = todos.order_by(sort_field)
     
     # Pagination
     paginator = Paginator(todos, 20)
