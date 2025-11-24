@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Notes & To-Do's{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    {% load static %}
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Berry Vue Style Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold text-primary" href="{% url 'notes:dashboard' %}">
+                <i class="material-icons me-2">note</i>Notes & To-Do's
+            </a>
+            
+            {% if user.is_authenticated %}
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link fw-medium text-dark" href="{% url 'notes:dashboard' %}">
+                            <i class="material-icons me-1">note</i>Notes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-medium text-dark" href="{% url 'notes:todo_dashboard' %}">
+                            <i class="material-icons me-1">assignment</i>Todos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-medium text-dark" href="{% url 'notes:standalone_todo_list' %}">
+                            <i class="material-icons me-1">task_alt</i>Standalone Todos
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Search -->
+                <form class="d-flex me-3" method="GET" action="{% url 'notes:search' %}">
+                    <div class="input-group">
+                        <input class="form-control border-end-0" type="search" name="q" placeholder="Search notes..." 
+                               value="{{ request.GET.q }}" style="border-radius: 8px 0 0 8px;">
+                        <button class="btn btn-outline-secondary border-start-0" type="submit" style="border-radius: 0 8px 8px 0;">
+                            <i class="material-icons">search</i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- User Menu -->
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#" role="button" data-bs-toggle="dropdown">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" alt="Avatar" class="rounded-circle me-2" width="32" height="32">
+                        {% else %}
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                <i class="material-icons" style="font-size: 18px;">person</i>
+                            </div>
+                        {% endif %}
+                        <span class="fw-medium">{{ user.full_name|default:user.username }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px;">
+                        <li><a class="dropdown-item d-flex align-items-center" href="{% url 'accounts:profile' %}">
+                            <i class="material-icons me-2 text-muted">person</i>Profile
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item d-flex align-items-center text-danger" href="{% url 'accounts:logout' %}">
+                            <i class="material-icons me-2">exit_to_app</i>Logout
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container-fluid mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 12px;">
+            <i class="material-icons me-2">
+                {% if message.tags == 'success' %}check_circle
+                {% elif message.tags == 'error' %}error
+                {% elif message.tags == 'warning' %}warning
+                {% else %}info{% endif %}
+            </i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="bg-light min-vh-100">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white text-muted text-center py-4 border-top">
+        <div class="container">
+            <p class="mb-0 fw-medium">&copy; 2024 Notes & To-Do's. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/70r2h4ki9m7s4vx8qw2lv8w1cz4izt726m4trl79l5i6bbks/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- Custom JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

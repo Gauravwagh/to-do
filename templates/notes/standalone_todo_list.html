@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}Standalone Todos - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <i class="material-icons me-2">task_alt</i>Standalone Todos
+                </h1>
+                <p class="text-muted">Manage your independent tasks and to-dos</p>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'notes:standalone_todo_create' %}" class="btn btn-primary">
+                    <i class="material-icons me-1">add</i>New Todo
+                </a>
+            </div>
+        </div>
+        
+        <!-- Quick Add Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="post" action="{% url 'notes:standalone_todo_quick_add' %}" id="quick-add-form">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <input type="text" name="title" class="form-control" placeholder="Add a new standalone todo..." required>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="priority" class="form-select">
+                                <option value="low">Low Priority</option>
+                                <option value="medium" selected>Medium Priority</option>
+                                <option value="high">High Priority</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="material-icons">add</i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Filters and Search -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Priority</label>
+                        <select name="priority" class="form-select">
+                            <option value="">All Priority</option>
+                            <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+                            <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+                            <option value="urgent" {% if priority_filter == 'urgent' %}selected{% endif %}>Urgent</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Search</label>
+                        <input type="text" name="q" class="form-control" placeholder="Search todos..." value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Sort By</label>
+                        <select name="sort" class="form-select">
+                            <option value="created" {% if sort_by == 'created' %}selected{% endif %}>Created Date</option>
+                            <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
+                            <option value="priority" {% if sort_by == 'priority' %}selected{% endif %}>Priority</option>
+                            <option value="due_date" {% if sort_by == 'due_date' %}selected{% endif %}>Due Date</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-outline-primary w-100">
+                            <i class="material-icons me-1">search</i>Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if todos %}
+        <div class="todos-grid">
+            {% for todo in todos %}
+            <div class="todo-card {% if todo.is_completed %}completed{% endif %}">
+                <div class="todo-header">
+                    <div class="todo-checkbox">
+                        <input type="checkbox" class="form-check-input todo-checkbox-input" 
+                               data-todo-id="{{ todo.id }}" 
+                               {% if todo.is_completed %}checked{% endif %}>
+                    </div>
+                    <h3 class="todo-title">{{ todo.title }}</h3>
+                    <div class="todo-actions">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="material-icons">more_vert</i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'notes:standalone_todo_edit' todo.id %}">
+                                    <i class="material-icons me-2">edit</i>Edit
+                                </a></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'notes:standalone_todo_delete' todo.id %}">
+                                    <i class="material-icons me-2">delete</i>Delete
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if todo.description %}
+                <div class="todo-description">
+                    {{ todo.description|linebreaks }}
+                </div>
+                {% endif %}
+                
+                <div class="todo-meta">
+                    <span class="badge bg-{{ todo.get_priority_color }}">{{ todo.get_priority_display }}</span>
+                    <span class="badge bg-{{ todo.get_status_color }}">{{ todo.get_status_display }}</span>
+                </div>
+                
+                {% if todo.due_date %}
+                <div class="todo-due-date">
+                    <i class="material-icons me-1">schedule</i>
+                    <span class="{% if todo.is_overdue %}text-danger{% endif %}">
+                        Due {{ todo.due_date|naturaltime }}
+                    </span>
+                </div>
+                {% endif %}
+                
+                {% if todo.tags.all %}
+                <div class="todo-tags">
+                    {% for tag in todo.tags.all %}
+                    <span class="tag">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="todo-footer">
+                    <small class="text-muted">
+                        Created {{ todo.created|naturaltime }}
+                    </small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="pagination-wrapper">
+            <nav aria-label="Todos pagination">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="material-icons">task_alt</i>
+            </div>
+            <h3>No standalone todos yet</h3>
+            <p>Create your first standalone todo to get started!</p>
+            <a href="{% url 'notes:standalone_todo_create' %}" class="btn btn-primary">
+                <i class="material-icons me-1">add</i>Create First Todo
+            </a>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Quick add form
+    const quickAddForm = document.getElementById('quick-add-form');
+    if (quickAddForm) {
+        quickAddForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear form
+                    this.reset();
+                    // Reload page to show new todo
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding the todo.');
+            });
+        });
+    }
+    
+    // Todo checkbox functionality
+    const todoCheckboxes = document.querySelectorAll('.todo-checkbox-input');
+    todoCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const todoId = this.dataset.todoId;
+            const isCompleted = this.checked;
+            
+            fetch(`/standalone-todos/${todoId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const todoCard = this.closest('.todo-card');
+                    if (data.is_completed) {
+                        todoCard.classList.add('completed');
+                    } else {
+                        todoCard.classList.remove('completed');
+                    }
+                } else {
+                    // Revert checkbox state
+                    this.checked = !isCompleted;
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Revert checkbox state
+                this.checked = !isCompleted;
+                alert('An error occurred while updating the todo.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

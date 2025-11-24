@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Login - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-container">
+        <div class="auth-header">
+            <h2><i class="fas fa-sticky-note text-success me-2"></i>Welcome Back</h2>
+            <p class="text-muted">Sign in to your account</p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            
+            <div class="d-grid gap-2 mt-3">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                </button>
+            </div>
+        </form>
+        
+        <div class="auth-links">
+            <p>Don't have an account? <a href="{% url 'accounts:signup' %}">Sign up here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ note.title }} - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    {% if note.is_pinned %}<i class="material-icons text-warning me-2">push_pin</i>{% endif %}
+                    {{ note.title }}
+                </h1>
+                <div class="text-muted">
+                    {% if note.notebook %}
+                    <span class="notebook-color" style="background-color: {{ note.notebook.color }};"></span>
+                    {{ note.notebook.name }} •
+                    {% endif %}
+                    {{ note.get_word_count }} words • {{ note.get_reading_time }} min read •
+                    Updated {{ note.modified|timesince }} ago
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button class="btn btn-outline-secondary copy-to-clipboard" 
+                        data-copy-text="{{ note.content|striptags }}">
+                    <i class="material-icons me-1">content_copy</i>Copy Content
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                            data-bs-toggle="dropdown">
+                        <i class="material-icons me-1">more_vert</i>Actions
+                    </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'notes:note_edit' note.slug %}">
+                        <i class="material-icons me-2">edit</i>Edit Note
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'notes:note_move' note.slug %}">
+                        <i class="material-icons me-2">swap_horiz</i>Move to Notebook
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'notes:note_copy' note.slug %}">
+                        <i class="material-icons me-2">content_copy</i>Copy Note
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'notes:todo_list' note.slug %}">
+                        <i class="material-icons me-2">assignment</i>Manage Todos
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'notes:attachment_upload' note.slug %}">
+                        <i class="material-icons me-2">attach_file</i>Upload Attachment
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'notes:attachment_multiple_upload' note.slug %}">
+                        <i class="material-icons me-2">cloud_upload</i>Upload Multiple Files
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'notes:note_pin' note.slug %}">
+                        <i class="material-icons me-2">push_pin</i>
+                        {% if note.is_pinned %}Unpin{% else %}Pin{% endif %} Note
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'notes:note_archive' note.slug %}">
+                        <i class="material-icons me-2">archive</i>
+                        {% if note.is_archived %}Restore{% else %}Archive{% endif %} Note
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger btn-delete" href="{% url 'notes:note_delete' note.slug %}">
+                        <i class="material-icons me-2">delete</i>Delete Note
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="note-content">
+                        {% if note.content_html %}
+                            {{ note.content_html|safe }}
+                        {% else %}
+                            {{ note.content|linebreaks }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            {% if note.attachments.all %}
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="material-icons me-2">attach_file</i>Attachments ({{ note.attachments.count }})</h6>
+                    <div>
+                        <a href="{% url 'notes:attachment_upload' note.slug %}" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="material-icons me-1">add</i>Add
+                        </a>
+                        <a href="{% url 'notes:attachment_multiple_upload' note.slug %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="material-icons me-1">cloud_upload</i>Multiple
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for attachment in note.attachments.all %}
+                        <div class="col-12 mb-3">
+                            <div class="card attachment-card">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-start mb-2">
+                                        {% if attachment.thumbnail %}
+                                        <img src="{{ attachment.thumbnail.url }}" alt="Thumbnail" class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                        {% else %}
+                                        <div class="attachment-icon me-2">
+                                            <i class="{{ attachment.get_file_icon }} fa-2x"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 text-truncate" title="{{ attachment.original_name }}">
+                                                {{ attachment.original_name|truncatechars:20 }}
+                                            </h6>
+                                            <small class="text-muted">
+                                                {{ attachment.get_file_size_human }} • {{ attachment.get_attachment_type_display }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if attachment.description %}
+                                    <p class="small text-muted mb-2">{{ attachment.description|truncatechars:50 }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="btn-group btn-group-sm">
+                                            {% if attachment.is_previewable %}
+                                            <a href="{% url 'notes:attachment_preview' note.slug attachment.id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="material-icons">visibility</i>
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'notes:attachment_download' note.slug attachment.id %}" class="btn btn-outline-success btn-sm">
+                                                <i class="material-icons">download</i>
+                                            </a>
+                                            <a href="{% url 'notes:attachment_delete' note.slug attachment.id %}" class="btn btn-outline-danger btn-sm">
+                                                <i class="material-icons">delete</i>
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">{{ attachment.created|date:"M d" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-4">
+                    <i class="material-icons" style="font-size: 3rem; color: #6c757d;">attach_file</i>
+                    <h5 class="text-muted">No Attachments</h5>
+                    <p class="text-muted">Add files, images, or documents to this note.</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="{% url 'notes:attachment_upload' note.slug %}" class="btn btn-primary">
+                            <i class="material-icons me-1">add</i>Upload File
+                        </a>
+                        <a href="{% url 'notes:attachment_multiple_upload' note.slug %}" class="btn btn-outline-primary">
+                            <i class="material-icons me-1">cloud_upload</i>Upload Multiple
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if note.tags.all %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="material-icons me-2">local_offer</i>Tags</h6>
+                </div>
+                <div class="card-body">
+                    {% for tag in note.tags.all %}
+                    <a href="{% url 'notes:search' %}?q={{ tag.name }}" class="tag-badge">
+                        {{ tag.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="material-icons me-2">info</i>Note Info</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Created:</strong> {{ note.created|date:"M d, Y g:i A" }}<br>
+                        <strong>Modified:</strong> {{ note.modified|date:"M d, Y g:i A" }}<br>
+                        <strong>Author:</strong> {{ note.user.full_name|default:note.user.username }}<br>
+                        <strong>Words:</strong> {{ note.get_word_count }}<br>
+                        <strong>Reading time:</strong> {{ note.get_reading_time }} minutes<br>
+                        <strong>Status:</strong> 
+                        {% if note.is_public %}Public{% else %}Private{% endif %}
+                        {% if note.is_pinned %}, Pinned{% endif %}
+                        {% if note.is_archived %}, Archived{% endif %}
+                    </small>
+                </div>
+            </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+

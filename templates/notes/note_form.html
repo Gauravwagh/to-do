@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+{% if object %}Edit Note{% else %}New Note{% endif %} - Notes & To-Do's
+{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <i class="material-icons me-2">{% if object %}edit{% else %}add{% endif %}</i>
+                    {% if object %}Edit Note{% else %}New Note{% endif %}
+                </h1>
+                <p class="text-muted">{% if object %}Update your note content and settings{% else %}Create a new note{% endif %}</p>
+            </div>
+            <div class="header-actions">
+                <span id="save-indicator" class="me-3"></span>
+                <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'notes:dashboard' %}{% endif %}" 
+                   class="btn btn-outline-secondary">
+                    <i class="material-icons me-1">close</i>Cancel
+                </a>
+            </div>
+        </div>
+    
+    <form method="post" id="note-form" {% if object %}data-note-id="{{ object.id }}"{% endif %}>
+        {% csrf_token %}
+        
+            <div class="form-layout">
+                <div class="form-main">
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        {{ form.title }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Content</label>
+                        {{ form.content }}
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="material-icons me-1">save</i>
+                            {% if object %}Update Note{% else %}Create Note{% endif %}
+                        </button>
+                        
+                        {% if object %}
+                        <a href="{{ object.get_absolute_url }}" class="btn btn-outline-secondary">
+                            <i class="material-icons me-1">visibility</i>View Note
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-sidebar">
+                    <div class="settings-card">
+                        <h6>Note Settings</h6>
+                        <div class="form-group">
+                            <label class="form-label">Notebook</label>
+                            {{ form.notebook }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Tags</label>
+                            {{ form.tags }}
+                        </div>
+                        
+                        <div class="form-check">
+                            {{ form.is_pinned }}
+                            <label class="form-check-label" for="{{ form.is_pinned.id_for_label }}">
+                                <i class="material-icons me-1">push_pin</i>Pin this note
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            {{ form.is_public }}
+                            <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                                <i class="material-icons me-1">public</i>Make public
+                            </label>
+                        </div>
+                    </div>
+                    
+                    {% if object %}
+                    <div class="stats-card">
+                        <h6>Note Statistics</h6>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-value">{{ object.get_word_count }}</span>
+                                <span class="stat-label">Words</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">{{ object.get_reading_time }}</span>
+                                <span class="stat-label">Min read</span>
+                            </div>
+                        </div>
+                        <div class="stats-meta">
+                            <small class="text-muted">
+                                <strong>Created:</strong> {{ object.created|date:"M d, Y" }}<br>
+                                <strong>Modified:</strong> {{ object.modified|date:"M d, Y" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize TinyMCE
+    tinymce.init({
+        selector: 'textarea[name="content"]',
+        height: 500,
+        menubar: false,
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | ' +
+        'bold italic forecolor | alignleft aligncenter ' +
+        'alignright alignjustify | bullist numlist outdent indent | ' +
+        'removeformat | help',
+        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+        setup: function (editor) {
+            editor.on('change', function () {
+                editor.save(); // Save content back to textarea
+                // Trigger auto-save
+                const textarea = document.querySelector('textarea[name="content"]');
+                if (textarea) {
+                    const event = new Event('input', { bubbles: true });
+                    textarea.dispatchEvent(event);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+

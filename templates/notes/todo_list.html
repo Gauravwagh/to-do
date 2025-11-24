@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}Todos - {{ note.title }} - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <i class="material-icons me-2">assignment</i>Todos
+                    <small class="text-muted">for {{ note.title }}</small>
+                </h1>
+                <p class="text-muted">Manage your tasks and stay organized</p>
+            </div>
+            <div class="header-actions">
+                <a href="{{ note.get_absolute_url }}" class="btn btn-outline-secondary">
+                    <i class="material-icons me-1">arrow_back</i>Back to Note
+                </a>
+                <a href="{% url 'notes:todo_create' note.slug %}" class="btn btn-primary">
+                    <i class="material-icons me-1">add</i>New Todo
+                </a>
+            </div>
+        </div>
+            
+            <!-- Quick Add Form -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h6 class="card-title">Quick Add Todo</h6>
+                    <form id="quick-add-form" method="post" action="{% url 'notes:todo_quick_add' note.slug %}">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                <input type="text" name="title" class="form-control" placeholder="Add a new todo..." required>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="priority" class="form-select">
+                                    <option value="low">Low Priority</option>
+                                    <option value="medium" selected>Medium Priority</option>
+                                    <option value="high">High Priority</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Filters and Search -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <select name="status" class="form-select">
+                                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="priority" class="form-select">
+                                <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All Priority</option>
+                                <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+                                <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+                                <option value="urgent" {% if priority_filter == 'urgent' %}selected{% endif %}>Urgent</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" name="q" class="form-control" placeholder="Search todos..." value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Bulk Actions -->
+            {% if todos %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form id="bulk-action-form" method="post" action="{% url 'notes:todo_bulk_action' note.slug %}">
+                        {% csrf_token %}
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <select name="action" class="form-select" required>
+                                    <option value="">Bulk Actions</option>
+                                    <option value="complete">Mark as Completed</option>
+                                    <option value="pending">Mark as Pending</option>
+                                    <option value="in_progress">Mark as In Progress</option>
+                                    <option value="cancelled">Mark as Cancelled</option>
+                                    <option value="delete">Delete Selected</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-outline-secondary">
+                                    <i class="fas fa-check-double me-1"></i>Apply to Selected
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Select todos using checkboxes and choose an action to apply to all selected items.
+                                </small>
+                            </div>
+                        </div>
+                        <input type="hidden" name="todo_ids" id="selected-todos">
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Todo List -->
+            {% if todos %}
+            <div class="row">
+                {% for todo in todos %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card todo-card {% if todo.is_completed %}completed{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input todo-checkbox" type="checkbox" 
+                                           value="{{ todo.id }}" id="todo-{{ todo.id }}"
+                                           {% if todo.is_completed %}checked{% endif %}>
+                                    <label class="form-check-label" for="todo-{{ todo.id }}">
+                                        <h6 class="mb-0 {% if todo.is_completed %}text-decoration-line-through{% endif %}">
+                                            {{ todo.title }}
+                                        </h6>
+                                    </label>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{% url 'notes:todo_edit' note.slug todo.id %}">
+                                            <i class="fas fa-edit me-2"></i>Edit
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'notes:todo_toggle' note.slug todo.id %}">
+                                            <i class="fas fa-{% if todo.is_completed %}undo{% else %}check{% endif %} me-2"></i>
+                                            {% if todo.is_completed %}Mark Pending{% else %}Mark Complete{% endif %}
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'notes:todo_delete' note.slug todo.id %}">
+                                            <i class="fas fa-trash me-2"></i>Delete
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            {% if todo.description %}
+                            <p class="text-muted small mb-2">{{ todo.description|truncatewords:20 }}</p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-{{ todo.get_priority_color }}">{{ todo.get_priority_display }}</span>
+                                <span class="badge bg-{{ todo.get_status_color }}">{{ todo.get_status_display }}</span>
+                            </div>
+                            
+                            {% if todo.due_date %}
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Due: {{ todo.due_date|date:"M d, Y g:i A" }}
+                                    {% if todo.is_overdue %}
+                                    <span class="text-danger">(Overdue)</span>
+                                    {% elif todo.days_until_due == 0 %}
+                                    <span class="text-warning">(Today)</span>
+                                    {% elif todo.days_until_due == 1 %}
+                                    <span class="text-info">(Tomorrow)</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if todo.tags.all %}
+                            <div class="mb-2">
+                                {% for tag in todo.tags.all|slice:":3" %}
+                                <span class="tag-badge">{{ tag.name }}</span>
+                                {% endfor %}
+                                {% if todo.tags.count > 3 %}
+                                <span class="text-muted">+{{ todo.tags.count|add:"-3" }} more</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ todo.created|date:"M d, Y" }}
+                                </small>
+                                {% if todo.completed_at %}
+                                <small class="text-success">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Completed {{ todo.completed_at|date:"M d" }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No todos found</h4>
+                <p class="text-muted">
+                    {% if search_query or status_filter != 'all' or priority_filter != 'all' %}
+                    Try adjusting your filters or search terms.
+                    {% else %}
+                    Create your first todo to get started with task management.
+                    {% endif %}
+                </p>
+                <a href="{% url 'notes:todo_create' note.slug %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create First Todo
+                </a>
+            </div>
+            {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Quick add form
+    const quickAddForm = document.getElementById('quick-add-form');
+    if (quickAddForm) {
+        quickAddForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const title = formData.get('title');
+            const priority = formData.get('priority');
+            
+            if (!title.trim()) return;
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error adding todo: ' + (data.errors || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding todo');
+            });
+        });
+    }
+    
+    // Todo checkbox toggle functionality
+    const todoCheckboxes = document.querySelectorAll('.todo-checkbox');
+    
+    todoCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const todoId = this.value;
+            const isCompleted = this.checked;
+            const todoCard = this.closest('.todo-card');
+            const todoTitle = todoCard.querySelector('h6');
+            
+            // Update UI immediately
+            if (isCompleted) {
+                todoCard.classList.add('completed');
+                todoTitle.classList.add('text-decoration-line-through');
+            } else {
+                todoCard.classList.remove('completed');
+                todoTitle.classList.remove('text-decoration-line-through');
+            }
+            
+            // Send AJAX request to toggle completion
+            fetch(`/todos/${todoId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI based on server response
+                    if (data.is_completed) {
+                        todoCard.classList.add('completed');
+                        todoTitle.classList.add('text-decoration-line-through');
+                    } else {
+                        todoCard.classList.remove('completed');
+                        todoTitle.classList.remove('text-decoration-line-through');
+                    }
+                } else {
+                    // Revert checkbox state on error
+                    this.checked = !isCompleted;
+                    if (isCompleted) {
+                        todoCard.classList.remove('completed');
+                        todoTitle.classList.remove('text-decoration-line-through');
+                    } else {
+                        todoCard.classList.add('completed');
+                        todoTitle.classList.add('text-decoration-line-through');
+                    }
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Revert checkbox state on error
+                this.checked = !isCompleted;
+                if (isCompleted) {
+                    todoCard.classList.remove('completed');
+                    todoTitle.classList.remove('text-decoration-line-through');
+                } else {
+                    todoCard.classList.add('completed');
+                    todoTitle.classList.add('text-decoration-line-through');
+                }
+                alert('An error occurred while updating the todo.');
+            });
+        });
+    });
+    
+    // Bulk actions
+    const bulkForm = document.getElementById('bulk-action-form');
+    const selectedTodosInput = document.getElementById('selected-todos');
+    
+    function updateSelectedTodos() {
+        const selectedIds = Array.from(todoCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        selectedTodosInput.value = selectedIds.join(',');
+    }
+    
+    todoCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedTodos);
+    });
+    
+    if (bulkForm) {
+        bulkForm.addEventListener('submit', function(e) {
+            const selectedIds = selectedTodosInput.value;
+            if (!selectedIds) {
+                e.preventDefault();
+                alert('Please select at least one todo');
+                return;
+            }
+            
+            const action = this.querySelector('select[name="action"]').value;
+            if (!action) {
+                e.preventDefault();
+                alert('Please select an action');
+                return;
+            }
+            
+            if (action === 'delete') {
+                if (!confirm('Are you sure you want to delete the selected todos?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+});
+</script>
+    </main>
+</div>
+{% endblock %}

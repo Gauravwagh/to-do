@@ -1,0 +1,505 @@
+/* Material Design Custom Styles for Evernote Clone */
+
+/* Root Variables */
+:root {
+    --primary-color: #2196F3;
+    --primary-dark: #1976D2;
+    --primary-light: #BBDEFB;
+    --accent-color: #FF4081;
+    --secondary-color: #757575;
+    --success-color: #4CAF50;
+    --warning-color: #FF9800;
+    --error-color: #F44336;
+    --info-color: #2196F3;
+    --text-primary: #212121;
+    --text-secondary: #757575;
+    --divider-color: #BDBDBD;
+    --background-color: #FAFAFA;
+    --surface-color: #FFFFFF;
+    --shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-hover: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Global Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* Navigation Customization */
+nav {
+    background-color: var(--primary-color) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.brand-logo {
+    font-weight: 500;
+    font-size: 1.5rem !important;
+}
+
+.nav-wrapper .input-field input[type=search] {
+    height: 64px;
+    padding-left: 4rem;
+    width: 300px;
+    border: 0;
+    box-shadow: none;
+    background-color: rgba(255,255,255,0.1);
+    color: white;
+}
+
+.nav-wrapper .input-field input[type=search]:focus {
+    background-color: rgba(255,255,255,0.2);
+    border-bottom: 2px solid white;
+    box-shadow: none;
+}
+
+.nav-wrapper .input-field input[type=search]::placeholder {
+    color: rgba(255,255,255,0.7);
+}
+
+.nav-wrapper .input-field .label-icon {
+    color: rgba(255,255,255,0.7);
+}
+
+/* Cards */
+.card {
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.card .card-content {
+    padding: 24px;
+}
+
+.card .card-title {
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 4px;
+    text-transform: none;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+}
+
+.btn-floating {
+    background-color: var(--accent-color);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-floating:hover {
+    background-color: var(--accent-color);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+/* Forms */
+.input-field label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.input-field input:focus + label,
+.input-field textarea:focus + label {
+    color: var(--primary-color);
+}
+
+.input-field input:focus,
+.input-field textarea:focus {
+    border-bottom: 2px solid var(--primary-color);
+    box-shadow: 0 1px 0 0 var(--primary-color);
+}
+
+/* Chips */
+.chip {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+    border-radius: 16px;
+    padding: 0 12px;
+    height: 32px;
+    line-height: 32px;
+    font-size: 0.8rem;
+    margin: 4px;
+}
+
+/* Sidebar */
+.sidebar {
+    background-color: var(--surface-color);
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+    min-height: calc(100vh - 64px);
+    padding: 0;
+}
+
+.sidebar .collection {
+    border: none;
+    margin: 0;
+}
+
+.sidebar .collection .collection-item {
+    border-bottom: 1px solid var(--divider-color);
+    padding: 16px 20px;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar .collection .collection-item:hover {
+    background-color: var(--primary-light);
+}
+
+.sidebar .collection .collection-item.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.sidebar .collection .collection-item.active i {
+    color: white;
+}
+
+/* Content Area */
+.content-area {
+    padding: 24px;
+    background-color: var(--background-color);
+    min-height: calc(100vh - 64px);
+}
+
+/* Note Cards */
+.note-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.note-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.note-card .card-content {
+    padding: 20px;
+}
+
+.note-card .card-title {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.note-card .card-content p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Notebook Cards */
+.notebook-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.notebook-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.notebook-card h5 {
+    margin: 0 0 8px 0;
+    font-weight: 500;
+}
+
+.notebook-card p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+/* Todo Cards */
+.todo-card {
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 12px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.todo-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px);
+}
+
+.todo-card.completed {
+    opacity: 0.7;
+    border-left-color: var(--success-color);
+}
+
+.todo-card .card-content {
+    padding: 16px;
+}
+
+/* Priority Colors */
+.priority-low { border-left-color: var(--success-color); }
+.priority-medium { border-left-color: var(--info-color); }
+.priority-high { border-left-color: var(--warning-color); }
+.priority-urgent { border-left-color: var(--error-color); }
+
+/* Status Colors */
+.status-pending { background-color: var(--secondary-color); }
+.status-in-progress { background-color: var(--primary-color); }
+.status-completed { background-color: var(--success-color); }
+.status-cancelled { background-color: var(--error-color); }
+
+/* Attachment Cards */
+.attachment-card {
+    border-radius: 8px;
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+}
+
+.attachment-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+.attachment-card .card-content {
+    padding: 16px;
+}
+
+.attachment-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary-light);
+    border-radius: 50%;
+    color: var(--primary-dark);
+    margin-right: 16px;
+}
+
+/* Search Results */
+.search-results .card {
+    margin-bottom: 16px;
+}
+
+.search-results .card-title {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+/* Pagination */
+.pagination li a {
+    color: var(--primary-color);
+    border-radius: 4px;
+    margin: 0 2px;
+}
+
+.pagination li.active {
+    background-color: var(--primary-color);
+}
+
+.pagination li.active a {
+    color: white;
+}
+
+/* Modals */
+.modal {
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.modal .modal-content {
+    padding: 24px;
+}
+
+.modal .modal-footer {
+    padding: 16px 24px;
+    background-color: var(--background-color);
+}
+
+/* Dropdowns */
+.dropdown-content {
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.dropdown-content li > a {
+    color: var(--text-primary);
+    padding: 12px 16px;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-content li > a:hover {
+    background-color: var(--primary-light);
+}
+
+/* Progress Bars */
+.progress {
+    background-color: var(--divider-color);
+    border-radius: 2px;
+    height: 4px;
+}
+
+.progress .determinate {
+    background-color: var(--primary-color);
+    border-radius: 2px;
+}
+
+/* Badges */
+.badge {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Tags */
+.tag-badge {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    margin: 2px;
+    display: inline-block;
+}
+
+/* Statistics Cards */
+.stat-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.stat-card .stat-number {
+    font-size: 2.5rem;
+    font-weight: 300;
+    margin: 0;
+}
+
+.stat-card .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin: 8px 0 0 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Responsive Design */
+@media only screen and (max-width: 992px) {
+    .sidebar {
+        position: fixed;
+        top: 64px;
+        left: -250px;
+        width: 250px;
+        height: calc(100vh - 64px);
+        z-index: 1000;
+        transition: left 0.3s ease;
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    .content-area {
+        margin-left: 0;
+        padding: 16px;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    .content-area {
+        padding: 12px;
+    }
+    
+    .card .card-content {
+        padding: 16px;
+    }
+    
+    .stat-card {
+        padding: 16px;
+    }
+    
+    .stat-card .stat-number {
+        font-size: 2rem;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+/* Utility Classes */
+.text-primary { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.bg-primary { background-color: var(--primary-color) !important; }
+.bg-surface { background-color: var(--surface-color) !important; }
+.bg-background { background-color: var(--background-color) !important; }
+
+.shadow-sm { box-shadow: var(--shadow) !important; }
+.shadow-md { box-shadow: var(--shadow-hover) !important; }
+
+.rounded { border-radius: 8px !important; }
+.rounded-sm { border-radius: 4px !important; }
+.rounded-lg { border-radius: 12px !important; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--divider-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}

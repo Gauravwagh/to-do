@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+{% if todo %}Edit Standalone Todo{% else %}New Standalone Todo{% endif %} - Notes & To-Do's
+{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <i class="material-icons me-2">{% if todo %}edit{% else %}add{% endif %}</i>
+                    {% if todo %}Edit Standalone Todo{% else %}New Standalone Todo{% endif %}
+                </h1>
+                <p class="text-muted">{% if todo %}Update your standalone todo{% else %}Create a new standalone todo{% endif %}</p>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'notes:standalone_todo_list' %}" class="btn btn-outline-secondary">
+                    <i class="material-icons me-1">close</i>Cancel
+                </a>
+            </div>
+        </div>
+        
+        <form method="post" id="todo-form">
+            {% csrf_token %}
+            
+            <div class="form-layout">
+                <div class="form-main">
+                    <div class="form-group">
+                        <label class="form-label">Title *</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.title.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.description.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="material-icons me-1">save</i>
+                            {% if todo %}Update Todo{% else %}Create Todo{% endif %}
+                        </button>
+                        
+                        {% if todo %}
+                        <a href="{% url 'notes:standalone_todo_list' %}" class="btn btn-outline-secondary">
+                            <i class="material-icons me-1">visibility</i>View All Todos
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-sidebar">
+                    <div class="settings-card">
+                        <h6>Todo Settings</h6>
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.priority.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.status.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Due Date</label>
+                            {{ form.due_date }}
+                            {% if form.due_date.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.due_date.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Tags</label>
+                            {{ form.tags }}
+                            {% if form.tags.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.tags.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if todo %}
+                    <div class="stats-card">
+                        <h6>Todo Info</h6>
+                        <div class="stats-meta">
+                            <small class="text-muted">
+                                <strong>Created:</strong> {{ todo.created|date:"M d, Y g:i A" }}<br>
+                                <strong>Modified:</strong> {{ todo.modified|date:"M d, Y g:i A" }}<br>
+                                <strong>Priority:</strong> {{ todo.get_priority_display }}<br>
+                                <strong>Status:</strong> {{ todo.get_status_display }}<br>
+                                {% if todo.due_date %}
+                                <strong>Due Date:</strong> {{ todo.due_date|date:"M d, Y g:i A" }}<br>
+                                {% endif %}
+                                {% if todo.tags.all %}
+                                <strong>Tags:</strong> 
+                                {% for tag in todo.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-save functionality
+    const form = document.getElementById('todo-form');
+    const titleField = document.querySelector('input[name="title"]');
+    const descriptionField = document.querySelector('textarea[name="description"]');
+    
+    let saveTimeout;
+    
+    function autoSave() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            // You can implement auto-save here if needed
+            console.log('Auto-save triggered');
+        }, 2000);
+    }
+    
+    if (titleField) {
+        titleField.addEventListener('input', autoSave);
+    }
+    
+    if (descriptionField) {
+        descriptionField.addEventListener('input', autoSave);
+    }
+    
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const title = titleField.value.trim();
+        if (!title) {
+            e.preventDefault();
+            alert('Title is required');
+            titleField.focus();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

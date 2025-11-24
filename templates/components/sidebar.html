@@ -1,0 +1,83 @@
+{% load humanize %}
+
+<!-- Berry Vue Theme Sidebar Component -->
+<aside class="sidebar">
+    <!-- Dashboard Section -->
+    <div class="sidebar-section">
+        <h6 class="sidebar-section-title">Dashboard</h6>
+        <nav class="sidebar-nav">
+            <a class="sidebar-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'notes:dashboard' %}">
+                <i class="material-icons">dashboard</i>
+                <span>All Notes</span>
+                <span class="sidebar-badge">{{ total_notes|default:0 }}</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Pages Section -->
+    <div class="sidebar-section">
+        <h6 class="sidebar-section-title">Pages</h6>
+        <nav class="sidebar-nav">
+            <a class="sidebar-nav-item {% if request.resolver_match.url_name == 'todo_dashboard' %}active{% endif %}" href="{% url 'notes:todo_dashboard' %}">
+                <i class="material-icons">assignment</i>
+                <span>All Todos</span>
+                <span class="sidebar-badge">{{ total_todos|default:0 }}</span>
+            </a>
+            <a class="sidebar-nav-item {% if request.resolver_match.url_name == 'standalone_todo_list' %}active{% endif %}" href="{% url 'notes:standalone_todo_list' %}">
+                <i class="material-icons">task_alt</i>
+                <span>Standalone Todos</span>
+                <span class="sidebar-badge">{{ standalone_todos|default:0 }}</span>
+            </a>
+            <a class="sidebar-nav-item {% if request.resolver_match.url_name == 'notebook_list' %}active{% endif %}" href="{% url 'notes:notebook_list' %}">
+                <i class="material-icons">book</i>
+                <span>Notebooks</span>
+            </a>
+            <a class="sidebar-nav-item {% if request.resolver_match.url_name == 'archived' %}active{% endif %}" href="{% url 'notes:archived' %}">
+                <i class="material-icons">archive</i>
+                <span>Archived</span>
+                <span class="sidebar-badge">{{ archived_notes|default:0 }}</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="sidebar-section">
+        <h6 class="sidebar-section-title">Quick Stats</h6>
+        <div class="sidebar-stats">
+            <div class="stat-item">
+                <i class="material-icons">push_pin</i>
+                <span>{{ pinned_notes|default:0 }} Pinned</span>
+            </div>
+            <div class="stat-item">
+                <i class="material-icons">check_circle</i>
+                <span>{{ completed_todos|default:0 }} Completed</span>
+            </div>
+            <div class="stat-item">
+                <i class="material-icons">schedule</i>
+                <span>{{ pending_todos|default:0 }} Pending</span>
+            </div>
+            {% if overdue_todos > 0 %}
+            <div class="stat-item">
+                <i class="material-icons">warning</i>
+                <span>{{ overdue_todos|default:0 }} Overdue</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Notebooks Section -->
+    {% if notebooks %}
+    <div class="sidebar-section">
+        <h6 class="sidebar-section-title">Notebooks</h6>
+        <div class="sidebar-notebooks">
+            {% for notebook in notebooks %}
+            <a class="notebook-item" href="{{ notebook.get_absolute_url }}">
+                <span class="notebook-color" style="background-color: {{ notebook.color }};"></span>
+                <span class="notebook-name">{{ notebook.name }}</span>
+                <span class="notebook-count">{{ notebook.get_note_count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</aside>

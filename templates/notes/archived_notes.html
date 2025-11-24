@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Archived Notes - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <i class="material-icons me-2">archive</i>Archived Notes
+                </h1>
+                <p class="text-muted">Notes you've archived</p>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'notes:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="material-icons me-1">arrow_back</i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+            
+        {% if notes %}
+        <div class="notes-grid">
+            {% for note in notes %}
+            <div class="note-card" data-url="{{ note.get_absolute_url }}">
+                <div class="note-header">
+                    <h3 class="note-title">{{ note.title|truncatechars:50 }}</h3>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="material-icons">more_vert</i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ note.get_absolute_url }}">
+                                <i class="material-icons me-2">visibility</i>View
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'notes:note_edit' note.slug %}">
+                                <i class="material-icons me-2">edit</i>Edit
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'notes:note_move' note.slug %}">
+                                <i class="material-icons me-2">swap_horiz</i>Move to Notebook
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'notes:note_copy' note.slug %}">
+                                <i class="material-icons me-2">content_copy</i>Copy Note
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'notes:note_archive' note.slug %}">
+                                <i class="material-icons me-2">restore</i>Restore
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'notes:note_delete' note.slug %}">
+                                <i class="material-icons me-2">delete</i>Delete
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                {% if note.notebook %}
+                <div class="note-notebook">
+                    <span class="notebook-color" style="background-color: {{ note.notebook.color }};"></span>
+                    <span>{{ note.notebook.name }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="note-preview">
+                    {{ note.content|striptags|truncatechars:120 }}
+                </div>
+                
+                {% if note.tags.all %}
+                <div class="note-tags">
+                    {% for tag in note.tags.all %}
+                    <span class="tag">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="note-footer">
+                    <div class="note-meta">
+                        <span class="time">{{ note.modified|timesince }} ago</span>
+                        <span class="words">{{ note.get_word_count }} words</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+            
+        <!-- Pagination -->
+        {% if notes.has_other_pages %}
+        <div class="pagination-wrapper">
+            <nav aria-label="Archived notes pagination">
+                <ul class="pagination">
+                    {% if notes.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ notes.number }} of {{ notes.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if notes.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.next_page_number }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.paginator.num_pages }}">Last &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="material-icons">archive</i>
+            </div>
+            <h3>No archived notes</h3>
+            <p>Notes you archive will appear here.</p>
+            <a href="{% url 'notes:dashboard' %}" class="btn btn-primary">
+                <i class="material-icons me-1">add</i>Create New Note
+            </a>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

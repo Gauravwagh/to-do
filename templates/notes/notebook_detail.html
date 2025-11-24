@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ notebook.name }} - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <span class="notebook-color me-2" style="background-color: {{ notebook.color }};"></span>
+                    {{ notebook.name }}
+                </h1>
+                {% if notebook.description %}
+                <p class="text-muted">{{ notebook.description }}</p>
+                {% endif %}
+                <small class="text-muted">
+                    <i class="material-icons me-1">note</i>
+                    {{ notebook.get_note_count }} note{{ notebook.get_note_count|pluralize }}
+                </small>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'notes:notebook_edit' notebook.slug %}" class="btn btn-outline-primary me-2">
+                    <i class="material-icons me-1">edit</i>Edit Notebook
+                </a>
+                <a href="{% url 'notes:note_create' %}?notebook={{ notebook.id }}" class="btn btn-primary me-2">
+                    <i class="material-icons me-1">add</i>New Note
+                </a>
+                {% if not notebook.is_default %}
+                <a href="{% url 'notes:notebook_delete' notebook.slug %}" class="btn btn-outline-danger">
+                    <i class="material-icons me-1">delete</i>Delete Notebook
+                </a>
+                {% endif %}
+            </div>
+        </div>
+            
+            {% if notes %}
+            <div class="row">
+                {% for note in notes %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card note-card h-100" data-url="{{ note.get_absolute_url }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">{{ note.title }}</h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ note.get_absolute_url }}">
+                                            <i class="fas fa-eye me-2"></i>View
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'notes:note_edit' note.slug %}">
+                                            <i class="fas fa-edit me-2"></i>Edit
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'notes:note_move' note.slug %}">
+                                            <i class="fas fa-exchange-alt me-2"></i>Move to Notebook
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'notes:note_copy' note.slug %}">
+                                            <i class="fas fa-copy me-2"></i>Copy Note
+                                        </a></li>
+                                        {% if note.is_pinned %}
+                                        <li><a class="dropdown-item" href="{% url 'notes:note_pin' note.slug %}">
+                                            <i class="fas fa-thumbtack me-2"></i>Unpin
+                                        </a></li>
+                                        {% else %}
+                                        <li><a class="dropdown-item" href="{% url 'notes:note_pin' note.slug %}">
+                                            <i class="fas fa-thumbtack me-2"></i>Pin
+                                        </a></li>
+                                        {% endif %}
+                                        <li><a class="dropdown-item" href="{% url 'notes:note_archive' note.slug %}">
+                                            <i class="fas fa-archive me-2"></i>Archive
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'notes:note_delete' note.slug %}">
+                                            <i class="fas fa-trash me-2"></i>Delete
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            {% if note.is_pinned %}
+                            <div class="mb-2">
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-thumbtack me-1"></i>Pinned
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="note-preview">
+                                {{ note.content|truncatewords:20|striptags }}
+                            </div>
+                            
+                            {% if note.tags.all %}
+                            <div class="mt-2">
+                                {% for tag in note.tags.all|slice:":3" %}
+                                <span class="tag-badge">{{ tag.name }}</span>
+                                {% endfor %}
+                                {% if note.tags.count > 3 %}
+                                <span class="text-muted">+{{ note.tags.count|add:"-3" }} more</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ note.modified|timesince }} ago
+                                </small>
+                                <small class="text-muted">
+                                    {{ note.get_word_count }} words
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if notes.has_other_pages %}
+            <nav aria-label="Notebook notes pagination">
+                <ul class="pagination justify-content-center">
+                    {% if notes.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in notes.paginator.page_range %}
+                    {% if notes.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > notes.number|add:'-3' and num < notes.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if notes.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No notes in this notebook</h4>
+                <p class="text-muted">Create your first note in this notebook.</p>
+                <a href="{% url 'notes:note_create' %}?notebook={{ notebook.id }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create New Note
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+{% endblock %}

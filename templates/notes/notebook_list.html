@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Notebooks - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <i class="material-icons me-2">book</i>Notebooks
+                    <small class="text-muted">{{ notebooks|length }} total</small>
+                </h1>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'notes:notebook_create' %}" class="btn btn-primary">
+                    <i class="material-icons me-1">add</i>New Notebook
+                </a>
+            </div>
+        </div>
+    
+    {% if notebooks %}
+    <div class="row">
+        {% for notebook in notebooks %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card note-card" data-url="{{ notebook.get_absolute_url }}">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="notebook-color me-2" style="background-color: {{ notebook.color }};"></span>
+                        <h5 class="card-title mb-0">{{ notebook.name }}</h5>
+                    </div>
+                    
+                    {% if notebook.description %}
+                    <p class="card-text text-muted">{{ notebook.description|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="material-icons me-1" style="font-size: 16px;">note</i>
+                            {{ notebook.get_note_count }} note{{ notebook.get_note_count|pluralize }}
+                        </small>
+                        <small class="text-muted">
+                            <i class="material-icons me-1" style="font-size: 16px;">schedule</i>
+                            {{ notebook.modified|timesince }} ago
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ notebook.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
+                            <i class="material-icons me-1" style="font-size: 16px;">visibility</i>View
+                        </a>
+                        <div>
+                            <a href="{% url 'notes:notebook_edit' notebook.slug %}" 
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="material-icons" style="font-size: 16px;">edit</i>
+                            </a>
+                            {% if not notebook.is_default %}
+                            <a href="{% url 'notes:notebook_delete' notebook.slug %}" 
+                               class="btn btn-sm btn-outline-danger btn-delete ms-1">
+                                <i class="material-icons" style="font-size: 16px;">delete</i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-book fa-5x text-muted mb-3"></i>
+        <h3 class="text-muted">No notebooks yet</h3>
+        <p class="text-muted">Create your first notebook to organize your notes!</p>
+        <a href="{% url 'notes:notebook_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus me-2"></i>Create First Notebook
+        </a>
+    </div>
+    {% endif %}
+    </div>
+    </main>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Attachment - {{ note.title }} - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Delete Attachment
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone.
+                    </div>
+                    
+                    <p>Are you sure you want to delete the attachment <strong>"{{ attachment.original_name }}"</strong>?</p>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <strong>File Type:</strong> {{ attachment.get_attachment_type_display }}<br>
+                            <strong>File Size:</strong> {{ attachment.get_file_size_human }}<br>
+                            <strong>Uploaded:</strong> {{ attachment.created|date:"M d, Y g:i A" }}
+                        </small>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ note.get_absolute_url }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-1"></i>Delete Attachment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

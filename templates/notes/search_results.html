@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <i class="material-icons me-2">search</i>Search Results
+                    {% if query %}
+                    <small class="text-muted">for "{{ query }}"</small>
+                    {% endif %}
+                </h1>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'notes:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="material-icons me-1">arrow_back</i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    
+    {% if query %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Found {{ total_results }} result{{ total_results|pluralize }} for "<strong>{{ query }}</strong>"
+    </div>
+    {% endif %}
+    
+    {% if notes %}
+    <div class="row">
+        {% for note in notes %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card note-card {% if note.is_pinned %}pinned{% endif %}" 
+                 data-url="{{ note.get_absolute_url }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ note.title|truncatechars:50 }}</h5>
+                        {% if note.is_pinned %}
+                        <i class="fas fa-thumbtack text-warning"></i>
+                        {% endif %}
+                    </div>
+                    
+                    {% if note.notebook %}
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <span class="notebook-color" style="background-color: {{ note.notebook.color }};"></span>
+                            {{ note.notebook.name }}
+                        </small>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="note-preview">
+                        {{ note.content|striptags|truncatechars:150 }}
+                    </div>
+                    
+                    {% if note.tags.all %}
+                    <div class="mt-2">
+                        {% for tag in note.tags.all %}
+                        <span class="tag-badge">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ note.modified|timesince }} ago
+                        </small>
+                        <small class="text-muted">
+                            {{ note.get_word_count }} words
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="Search results pagination">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page=1">&laquo; First</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+    {% else %}
+    {% if query %}
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-5x text-muted mb-3"></i>
+        <h3 class="text-muted">No results found</h3>
+        <p class="text-muted">Try different keywords or check your spelling</p>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-5x text-muted mb-3"></i>
+        <h3 class="text-muted">Search your notes</h3>
+        <p class="text-muted">Use the search bar above to find notes, tags, or content</p>
+    </div>
+    {% endif %}
+    {% endif %}
+    </div>
+    </main>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+

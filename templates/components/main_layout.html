@@ -1,0 +1,12 @@
+{% load humanize %}
+
+<!-- Main Layout Component with Sidebar -->
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+</div>

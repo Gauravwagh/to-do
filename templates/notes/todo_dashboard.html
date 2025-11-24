@@ -1,0 +1,391 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}Todo Dashboard - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>Todos</h1>
+                <p class="text-muted">Manage all your tasks across notes and notebooks</p>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'notes:note_create' %}" class="btn btn-primary">
+                    <i class="material-icons me-1">add</i>Create Note with Todos
+                </a>
+            </div>
+        </div>
+            
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-2 col-sm-6 mb-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ total_todos }}</h3>
+                            <small>Total Todos</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6 mb-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ completed_todos }}</h3>
+                            <small>Completed</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6 mb-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ pending_todos }}</h3>
+                            <small>Pending</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6 mb-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ in_progress_todos }}</h3>
+                            <small>In Progress</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6 mb-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ overdue_todos }}</h3>
+                            <small>Overdue</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6 mb-3">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">
+                                {% if total_todos > 0 %}
+                                    {{ completed_todos|floatformat:0 }}{{ total_todos|floatformat:0|slice:":1" }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </h3>
+                            <small>Completion Rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Filters -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Advanced Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Notebook</label>
+                            <select name="notebook" class="form-select">
+                                <option value="all" {% if notebook_filter == 'all' %}selected{% endif %}>All Notebooks</option>
+                                {% for notebook in notebooks %}
+                                <option value="{{ notebook.id }}" {% if notebook_filter == notebook.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ notebook.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Note</label>
+                            <select name="note" class="form-select">
+                                <option value="all" {% if note_filter == 'all' %}selected{% endif %}>All Notes</option>
+                                {% for note in notes %}
+                                <option value="{{ note.id }}" {% if note_filter == note.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ note.title|truncatechars:30 }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Priority</label>
+                            <select name="priority" class="form-select">
+                                <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All Priority</option>
+                                <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+                                <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+                                <option value="urgent" {% if priority_filter == 'urgent' %}selected{% endif %}>Urgent</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Sort By</label>
+                            <select name="sort" class="form-select">
+                                <option value="created" {% if sort_by == 'created' %}selected{% endif %}>Created Date</option>
+                                <option value="due_date" {% if sort_by == 'due_date' %}selected{% endif %}>Due Date</option>
+                                <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
+                                <option value="priority" {% if sort_by == 'priority' %}selected{% endif %}>Priority</option>
+                                <option value="status" {% if sort_by == 'status' %}selected{% endif %}>Status</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="q" class="form-control" placeholder="Search todos, descriptions, or note titles..." value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Order</label>
+                            <select name="order" class="form-select">
+                                <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Newest First</option>
+                                <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Oldest First</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>Apply Filters
+                                </button>
+                                <a href="{% url 'notes:todo_dashboard' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Todo List -->
+            {% if todos %}
+            <div class="row">
+                {% for todo in todos %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card todo-card {% if todo.is_completed %}completed{% endif %} priority-{{ todo.priority }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input todo-checkbox" type="checkbox" 
+                                           value="{{ todo.id }}" id="todo-{{ todo.id }}"
+                                           {% if todo.is_completed %}checked{% endif %}>
+                                    <label class="form-check-label" for="todo-{{ todo.id }}">
+                                        <h6 class="mb-0 {% if todo.is_completed %}text-decoration-line-through{% endif %}">
+                                            {{ todo.title }}
+                                        </h6>
+                                    </label>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="material-icons">more_vert</i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        {% if todo.note %}
+                                        <li><a class="dropdown-item" href="{% url 'notes:todo_edit' todo.note.slug todo.id %}">
+                                            <i class="material-icons me-2">edit</i>Edit
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'notes:todo_toggle' todo.note.slug todo.id %}">
+                                            <i class="material-icons me-2">{% if todo.is_completed %}undo{% else %}check{% endif %}</i>
+                                            {% if todo.is_completed %}Mark Pending{% else %}Mark Complete{% endif %}
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{{ todo.note.get_absolute_url }}">
+                                            <i class="material-icons me-2">sticky_note_2</i>View Note
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'notes:todo_list' todo.note.slug %}">
+                                            <i class="material-icons me-2">assignment</i>All Todos in Note
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'notes:todo_delete' todo.note.slug todo.id %}">
+                                            <i class="material-icons me-2">delete</i>Delete
+                                        </a></li>
+                                        {% else %}
+                                        <li><a class="dropdown-item" href="{% url 'notes:standalone_todo_edit' todo.id %}">
+                                            <i class="material-icons me-2">edit</i>Edit
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'notes:standalone_todo_toggle' todo.id %}">
+                                            <i class="material-icons me-2">{% if todo.is_completed %}undo{% else %}check{% endif %}</i>
+                                            {% if todo.is_completed %}Mark Pending{% else %}Mark Complete{% endif %}
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'notes:standalone_todo_delete' todo.id %}">
+                                            <i class="material-icons me-2">delete</i>Delete
+                                        </a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Note Context -->
+                            {% if todo.note %}
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="material-icons me-1" style="font-size: 16px;">sticky_note_2</i>
+                                    <a href="{{ todo.note.get_absolute_url }}" class="text-decoration-none">
+                                        {{ todo.note.title|truncatechars:30 }}
+                                    </a>
+                                    <span class="ms-2">
+                                        <i class="material-icons me-1" style="font-size: 16px;">book</i>
+                                        {{ todo.note.notebook.name }}
+                                    </span>
+                                </small>
+                            </div>
+                            {% else %}
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="material-icons me-1" style="font-size: 16px;">task_alt</i>
+                                    <span class="text-muted">Standalone Todo</span>
+                                </small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if todo.description %}
+                            <p class="text-muted small mb-2">{{ todo.description|truncatewords:15 }}</p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-{{ todo.get_priority_color }}">{{ todo.get_priority_display }}</span>
+                                <span class="badge bg-{{ todo.get_status_color }}">{{ todo.get_status_display }}</span>
+                            </div>
+                            
+                            {% if todo.due_date %}
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Due: {{ todo.due_date|date:"M d, Y g:i A" }}
+                                    {% if todo.is_overdue %}
+                                    <span class="text-danger">(Overdue)</span>
+                                    {% elif todo.days_until_due == 0 %}
+                                    <span class="text-warning">(Today)</span>
+                                    {% elif todo.days_until_due == 1 %}
+                                    <span class="text-info">(Tomorrow)</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if todo.tags.all %}
+                            <div class="mb-2">
+                                {% for tag in todo.tags.all|slice:":2" %}
+                                <span class="tag-badge">{{ tag.name }}</span>
+                                {% endfor %}
+                                {% if todo.tags.count > 2 %}
+                                <span class="text-muted">+{{ todo.tags.count|add:"-2" }} more</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ todo.created|date:"M d, Y" }}
+                                </small>
+                                {% if todo.completed_at %}
+                                <small class="text-success">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Completed {{ todo.completed_at|date:"M d" }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if todos.has_other_pages %}
+            <nav aria-label="Todo pagination">
+                <ul class="pagination justify-content-center">
+                    {% if todos.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ todos.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ todos.number }} of {{ todos.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if todos.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ todos.next_page_number }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ todos.paginator.num_pages }}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No todos found</h4>
+                <p class="text-muted">
+                    {% if search_query or status_filter != 'all' or priority_filter != 'all' or notebook_filter != 'all' or note_filter != 'all' %}
+                    Try adjusting your filters or search terms.
+                    {% else %}
+                    Create your first todo to get started with task management.
+                    {% endif %}
+                </p>
+                <a href="{% url 'notes:note_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create Note with Todos
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form on filter change
+    const filterForm = document.querySelector('form[method="get"]');
+    const filterSelects = filterForm.querySelectorAll('select[name="notebook"], select[name="note"], select[name="status"], select[name="priority"], select[name="sort"], select[name="order"]');
+    
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+    
+    // Todo checkbox functionality
+    const todoCheckboxes = document.querySelectorAll('.todo-checkbox');
+    todoCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const todoId = this.value;
+            const isCompleted = this.checked;
+            
+            // You can add AJAX functionality here to toggle todos without page reload
+            // For now, we'll just update the visual state
+            const card = this.closest('.todo-card');
+            if (isCompleted) {
+                card.classList.add('completed');
+            } else {
+                card.classList.remove('completed');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

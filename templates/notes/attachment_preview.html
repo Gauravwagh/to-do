@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Preview {{ attachment.original_name }} - {{ note.title }} - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="header-left">
+                <h1>
+                    <i class="{{ attachment.get_file_icon }} me-2"></i>{{ attachment.original_name }}
+                </h1>
+                <p class="text-muted">
+                    <i class="material-icons me-1">description</i>{{ attachment.get_attachment_type_display }} • 
+                    <i class="material-icons me-1">storage</i>{{ attachment.get_file_size_human }} • 
+                    <i class="material-icons me-1">calendar_today</i>{{ attachment.created|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'notes:attachment_download' note.slug attachment.id %}" class="btn btn-outline-primary me-2">
+                    <i class="material-icons me-1">download</i>Download
+                </a>
+                <a href="{{ note.get_absolute_url }}" class="btn btn-outline-secondary">
+                    <i class="material-icons me-1">arrow_back</i>Back to Note
+                </a>
+            </div>
+        </div>
+            
+            <!-- File Preview -->
+            <div class="card">
+                <div class="card-body">
+                    {% if attachment.is_image %}
+                        <div class="text-center">
+                            <img src="{{ attachment.file.url }}" alt="{{ attachment.original_name }}" 
+                                 class="img-fluid" style="max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+                    {% elif attachment.file_type == 'application/pdf' %}
+                        <div class="pdf-preview-container">
+                            <div class="pdf-toolbar mb-3">
+                                <button class="btn btn-outline-primary btn-sm" onclick="zoomIn()">
+                                    <i class="fas fa-search-plus"></i> Zoom In
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="zoomOut()">
+                                    <i class="fas fa-search-minus"></i> Zoom Out
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="resetZoom()">
+                                    <i class="fas fa-expand-arrows-alt"></i> Reset
+                                </button>
+                                <a href="{% url 'notes:attachment_serve' note.slug attachment.id %}" target="_blank" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-external-link-alt"></i> Open in New Tab
+                                </a>
+                            </div>
+                            <div class="pdf-viewer-container" style="border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;">
+                                <iframe id="pdf-viewer" 
+                                        src="{% url 'notes:attachment_serve' note.slug attachment.id %}#toolbar=1&navpanes=1&scrollbar=1" 
+                                        width="100%" 
+                                        height="600px" 
+                                        style="border: none;"
+                                        onload="window.handlePdfLoad()"
+                                        onerror="window.handlePdfError()">
+                                </iframe>
+                                <div id="pdf-loading" class="preview-loading" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                    <p class="mt-2">Loading PDF...</p>
+                                </div>
+                            </div>
+                            <div id="pdf-error" class="text-center py-5" style="display: none;">
+                                <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                <h4 class="text-muted">PDF Preview Not Available</h4>
+                                <p class="text-muted">Your browser doesn't support PDF preview or the file couldn't be loaded.</p>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{% url 'notes:attachment_serve' note.slug attachment.id %}" target="_blank" class="btn btn-primary">
+                                        <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                                    </a>
+                                    <a href="{% url 'notes:attachment_download' note.slug attachment.id %}" class="btn btn-outline-primary">
+                                        <i class="fas fa-download me-1"></i>Download PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% elif attachment.file_type == 'text/plain' %}
+                        <div class="text-preview-container">
+                            <div class="text-toolbar mb-3">
+                                <button class="btn btn-outline-primary btn-sm" onclick="toggleWrap()">
+                                    <i class="fas fa-align-left"></i> Toggle Wrap
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="copyText()">
+                                    <i class="fas fa-copy"></i> Copy Text
+                                </button>
+                            </div>
+                            <pre id="text-content" class="bg-light p-3" style="max-height: 70vh; overflow-y: auto; white-space: pre-wrap;">{{ attachment.file.read|safe }}</pre>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="{{ attachment.get_file_icon }} fa-5x text-muted mb-3"></i>
+                            <h4 class="text-muted">Preview not available</h4>
+                            <p class="text-muted">This file type cannot be previewed in the browser.</p>
+                            <div class="d-flex justify-content-center gap-2">
+                                <a href="{% url 'notes:attachment_download' note.slug attachment.id %}" class="btn btn-primary">
+                                    <i class="fas fa-download me-1"></i>Download to View
+                                </a>
+                                <a href="{{ attachment.file.url }}" target="_blank" class="btn btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- File Details -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">File Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Original Name:</strong> {{ attachment.original_name }}<br>
+                            <strong>File Type:</strong> {{ attachment.get_attachment_type_display }}<br>
+                            <strong>MIME Type:</strong> {{ attachment.file_type }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>File Size:</strong> {{ attachment.get_file_size_human }}<br>
+                            <strong>Uploaded:</strong> {{ attachment.created|date:"M d, Y g:i A" }}<br>
+                            <strong>Modified:</strong> {{ attachment.modified|date:"M d, Y g:i A" }}
+                        </div>
+                    </div>
+                    
+                    {% if attachment.description %}
+                    <hr>
+                    <strong>Description:</strong>
+                    <p class="mt-2">{{ attachment.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// PDF Preview Functions
+let currentZoom = 100;
+
+// Define functions globally to avoid reference errors
+window.handlePdfLoad = function() {
+    // PDF loaded successfully
+    const errorDiv = document.getElementById('pdf-error');
+    const loadingDiv = document.getElementById('pdf-loading');
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+    }
+    if (loadingDiv) {
+        loadingDiv.style.display = 'none';
+    }
+    console.log('PDF loaded successfully');
+};
+
+window.handlePdfError = function() {
+    // PDF failed to load, show error message
+    const errorDiv = document.getElementById('pdf-error');
+    const iframe = document.getElementById('pdf-viewer');
+    const loadingDiv = document.getElementById('pdf-loading');
+    
+    if (errorDiv) {
+        errorDiv.style.display = 'block';
+    }
+    if (iframe) {
+        iframe.style.display = 'none';
+    }
+    if (loadingDiv) {
+        loadingDiv.style.display = 'none';
+    }
+    console.log('PDF failed to load');
+};
+
+function zoomIn() {
+    currentZoom = Math.min(currentZoom + 25, 300);
+    updateZoom();
+}
+
+function zoomOut() {
+    currentZoom = Math.max(currentZoom - 25, 50);
+    updateZoom();
+}
+
+function resetZoom() {
+    currentZoom = 100;
+    updateZoom();
+}
+
+function updateZoom() {
+    const iframe = document.getElementById('pdf-viewer');
+    if (iframe) {
+        iframe.style.transform = `scale(${currentZoom / 100})`;
+        iframe.style.transformOrigin = 'top left';
+    }
+}
+
+// Text Preview Functions
+function toggleWrap() {
+    const textContent = document.getElementById('text-content');
+    if (textContent) {
+        if (textContent.style.whiteSpace === 'pre-wrap') {
+            textContent.style.whiteSpace = 'pre';
+        } else {
+            textContent.style.whiteSpace = 'pre-wrap';
+        }
+    }
+}
+
+function copyText() {
+    const textContent = document.getElementById('text-content');
+    if (textContent) {
+        navigator.clipboard.writeText(textContent.textContent).then(() => {
+            // Show success message
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            button.classList.remove('btn-outline-primary');
+            button.classList.add('btn-success');
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-primary');
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert('Failed to copy text to clipboard');
+        });
+    }
+}
+
+// Auto-detect PDF loading issues
+document.addEventListener('DOMContentLoaded', function() {
+    const iframe = document.getElementById('pdf-viewer');
+    const loadingDiv = document.getElementById('pdf-loading');
+    
+    if (iframe && loadingDiv) {
+        // Show loading indicator
+        loadingDiv.style.display = 'block';
+        
+        // Set a timeout to check if PDF loads
+        setTimeout(() => {
+            try {
+                // Try to access iframe content to detect if PDF loaded
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (!iframeDoc || iframeDoc.body.innerHTML.trim() === '') {
+                    window.handlePdfError();
+                } else {
+                    window.handlePdfLoad();
+                }
+            } catch (e) {
+                // Cross-origin or other issues, assume PDF might not load
+                console.log('PDF preview may not be available due to browser restrictions');
+                window.handlePdfError();
+            }
+        }, 5000); // Increased timeout to 5 seconds
+    }
+});
+</script>
+    </main>
+</div>
+{% endblock %}

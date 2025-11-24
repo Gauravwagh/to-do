@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Copy Note - Notes & To-Do's{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-copy me-2"></i>Copy Note
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="mb-2">Original Note: {{ original_note.title }}</h5>
+                        {% if original_note.notebook %}
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="notebook-color me-2" style="background-color: {{ original_note.notebook.color }};"></span>
+                            <small class="text-muted">From: <strong>{{ original_note.notebook.name }}</strong></small>
+                        </div>
+                        {% endif %}
+                        <div class="note-preview">
+                            {{ original_note.content|truncatewords:15|striptags }}
+                        </div>
+                        {% if original_note.tags.all %}
+                        <div class="mt-2">
+                            <small class="text-muted">Tags: </small>
+                            {% for tag in original_note.tags.all %}
+                            <span class="tag-badge">{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> This will create a complete copy of the note including content and tags. The copy will be placed in your selected notebook.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ original_note.get_absolute_url }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-copy me-1"></i>Copy Note
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
