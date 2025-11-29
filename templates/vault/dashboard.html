@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Vault Dashboard{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="material-icons">verified_user</i> Secure Vault</h2>
+                <div>
+                    <span class="badge bg-success me-2">
+                        <i class="material-icons" style="font-size: 14px;">lock_open</i> Unlocked
+                        {% if time_remaining %}
+                            - {{ time_remaining }}s remaining
+                        {% endif %}
+                    </span>
+                    <a href="{% url 'vault:lock' %}" class="btn btn-sm btn-outline-danger">
+                        <i class="material-icons">lock</i> Lock Vault
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Credentials</h6>
+                    <h2>{{ credential_count }}</h2>
+                    <a href="{% url 'vault:credential_list' %}" class="btn btn-sm btn-primary mt-2">View All</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Secure Notes</h6>
+                    <h2>{{ note_count }}</h2>
+                    <a href="{% url 'vault:note_list' %}" class="btn btn-sm btn-primary mt-2">View All</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Files</h6>
+                    <h2>{{ file_count }}</h2>
+                    <a href="{% url 'vault:file_list' %}" class="btn btn-sm btn-primary mt-2">View All</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">API Keys</h6>
+                    <h2>{{ apikey_count }}</h2>
+                    <a href="{% url 'vault:apikey_list' %}" class="btn btn-sm btn-primary mt-2">View All</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{% url 'vault:credential_create' %}" class="btn btn-outline-primary w-100">
+                                <i class="material-icons">add</i> New Credential
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'vault:note_create' %}" class="btn btn-outline-primary w-100">
+                                <i class="material-icons">note_add</i> New Secure Note
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'vault:file_create' %}" class="btn btn-outline-primary w-100">
+                                <i class="material-icons">upload_file</i> Upload File
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'vault:apikey_create' %}" class="btn btn-outline-primary w-100">
+                                <i class="material-icons">vpn_key</i> New API Key
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Items -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Credentials</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_credentials %}
+                        <div class="list-group">
+                            {% for cred in recent_credentials %}
+                                <a href="{% url 'vault:credential_detail' cred.pk %}" class="list-group-item list-group-item-action">
+                                    <i class="material-icons">vpn_key</i> {{ cred.decrypted_name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No credentials yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Secure Notes</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_notes %}
+                        <div class="list-group">
+                            {% for note in recent_notes %}
+                                <a href="{% url 'vault:note_detail' note.pk %}" class="list-group-item list-group-item-action">
+                                    <i class="material-icons">note</i> {{ note.decrypted_name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No secure notes yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    </main>
+</div>
+{% endblock %}

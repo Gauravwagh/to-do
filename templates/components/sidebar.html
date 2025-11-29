@@ -40,6 +40,51 @@
         </nav>
     </div>
 
+    <!-- Vault Section -->
+    <div class="sidebar-section">
+        <h6 class="sidebar-section-title">Secure Vault</h6>
+        <nav class="sidebar-nav">
+            {% if vault_is_initialized %}
+                <a class="sidebar-nav-item" href="{% url 'vault:dashboard' %}">
+                    {% if vault_is_unlocked %}
+                        <i class="material-icons text-success">lock_open</i>
+                        <span>Vault (Unlocked)</span>
+                    {% else %}
+                        <i class="material-icons text-warning">lock</i>
+                        <span>Vault (Locked)</span>
+                    {% endif %}
+                    <span class="sidebar-badge">{{ vault_total_items }}</span>
+                </a>
+
+                {% if vault_is_unlocked %}
+                    <div class="sidebar-vault-stats" style="padding-left: 2.5rem; font-size: 0.85rem;">
+                        <div class="vault-stat-item">
+                            <i class="material-icons" style="font-size: 16px;">vpn_key</i>
+                            <span>{{ vault_credential_count }} Credentials</span>
+                        </div>
+                        <div class="vault-stat-item">
+                            <i class="material-icons" style="font-size: 16px;">note</i>
+                            <span>{{ vault_note_count }} Secure Notes</span>
+                        </div>
+                        <div class="vault-stat-item">
+                            <i class="material-icons" style="font-size: 16px;">folder</i>
+                            <span>{{ vault_file_count }} Files</span>
+                        </div>
+                        <div class="vault-stat-item">
+                            <i class="material-icons" style="font-size: 16px;">key</i>
+                            <span>{{ vault_apikey_count }} API Keys</span>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <a class="sidebar-nav-item" href="{% url 'vault:setup' %}">
+                    <i class="material-icons">add_circle</i>
+                    <span>Set Up Vault</span>
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+
     <!-- Quick Stats Section -->
     <div class="sidebar-section">
         <h6 class="sidebar-section-title">Quick Stats</h6>

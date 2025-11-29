@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Secure Notes - Vault{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    {% include 'components/sidebar.html' %}
+    <main class="main-content">
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="material-icons">note</i> Secure Notes</h2>
+        <a href="{% url 'vault:note_create' %}" class="btn btn-primary">
+            <i class="material-icons">add</i> New Note
+        </a>
+    </div>
+
+    {% if notes %}
+        <div class="card">
+            <div class="card-body">
+                <div class="list-group">
+                    {% for note in notes %}
+                        <a href="{% url 'vault:note_detail' note.pk %}" class="list-group-item list-group-item-action">
+                            <h5 class="mb-1">{{ note.decrypted_name }}</h5>
+                            <small class="text-muted">{{ note.get_content_type_display }}</small>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">No secure notes yet. <a href="{% url 'vault:note_create' %}">Create your first note</a></p>
+        </div>
+    {% endif %}
+</div>
+    </main>
+</div>
+{% endblock %}

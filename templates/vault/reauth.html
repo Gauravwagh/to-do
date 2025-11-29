@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Re-authenticate - Vault{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="material-icons" style="font-size: 48px; color: #f59e0b;">verified_user</i>
+                        <h2 class="mt-3">Confirm Master Password</h2>
+                        <p class="text-muted">Enter your master password to view {{ item_name|default:"this sensitive information" }}</p>
+                    </div>
+
+                    <div class="alert alert-info border-0 shadow-sm">
+                        <div class="d-flex align-items-start">
+                            <i class="material-icons text-info me-2" style="font-size: 24px;">shield</i>
+                            <div>
+                                <strong>Security Check Required</strong><br>
+                                <small>For your security, we require master password confirmation before revealing sensitive credentials.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+
+                        <div class="alert alert-warning border-0 mt-3" style="font-size: 0.875rem;">
+                            <i class="material-icons" style="font-size: 16px; vertical-align: middle;">schedule</i>
+                            <small>Re-authentication valid for 5 minutes</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mt-3">
+                            <i class="material-icons">check_circle</i> Verify and Continue
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <a href="{% url 'vault:dashboard' %}" class="text-muted">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

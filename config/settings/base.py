@@ -31,6 +31,7 @@ LOCAL_APPS = [
     'accounts.apps.AccountsConfig',
     'notes.apps.NotesConfig',
     'core.apps.CoreConfig',
+    'vault.apps.VaultConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -59,6 +60,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'vault.context_processors.vault_stats',
             ],
         },
     },
@@ -159,6 +161,21 @@ TINYMCE_DEFAULT_CONFIG = {
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'SAMEORIGIN'  # Allow iframe embedding for file previews
+
+# Vault settings
+VAULT_SETTINGS = {
+    'DEFAULT_TIMEOUT_MINUTES': 15,
+    'MAX_FAILED_ATTEMPTS': 5,
+    'LOCKOUT_DURATION_MINUTES': 30,
+    'KDF_ITERATIONS': 600000,
+    'MAX_FILE_SIZE_MB': 25,
+}
+
+# Session security
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Strict'
 
 # Logging
 LOGGING = {

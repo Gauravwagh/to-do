@@ -21,8 +21,8 @@
     <!-- Berry Vue Style Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold text-primary" href="{% url 'notes:dashboard' %}">
-                <i class="material-icons me-2">note</i>Notes & To-Do's
+            <a class="navbar-brand" href="{% url 'notes:dashboard' %}">
+                <i class="material-icons">edit_note</i>Notes & Todos
             </a>
             
             {% if user.is_authenticated %}
@@ -46,6 +46,21 @@
                         <a class="nav-link fw-medium text-dark" href="{% url 'notes:standalone_todo_list' %}">
                             <i class="material-icons me-1">task_alt</i>Standalone Todos
                         </a>
+                    </li>
+                    <li class="nav-item">
+                        {% if vault_is_initialized %}
+                            <a class="nav-link fw-medium text-dark" href="{% url 'vault:dashboard' %}">
+                                {% if vault_is_unlocked %}
+                                    <i class="material-icons me-1 text-success">lock_open</i>Vault
+                                {% else %}
+                                    <i class="material-icons me-1 text-warning">lock</i>Vault
+                                {% endif %}
+                            </a>
+                        {% else %}
+                            <a class="nav-link fw-medium text-dark" href="{% url 'vault:setup' %}">
+                                <i class="material-icons me-1">security</i>Set Up Vault
+                            </a>
+                        {% endif %}
                     </li>
                 </ul>
                 
@@ -91,10 +106,10 @@
     {% if messages %}
     <div class="container-fluid mt-3">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 12px;">
-            <i class="material-icons me-2">
+        <div class="alert alert-{% if 'danger' in message.tags %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 12px;">
+            <i class="material-icons me-2" style="vertical-align: middle;">
                 {% if message.tags == 'success' %}check_circle
-                {% elif message.tags == 'error' %}error
+                {% elif 'error' in message.tags or 'danger' in message.tags %}error
                 {% elif message.tags == 'warning' %}warning
                 {% else %}info{% endif %}
             </i>
@@ -111,9 +126,9 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white text-muted text-center py-4 border-top">
+    <footer>
         <div class="container">
-            <p class="mb-0 fw-medium">&copy; 2024 Notes & To-Do's. All rights reserved.</p>
+            <p>&copy; 2024 Notes & Todos. Built with Django.</p>
         </div>
     </footer>
 

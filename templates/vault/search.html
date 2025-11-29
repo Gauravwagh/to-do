@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Search Vault{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    {% include 'components/sidebar.html' %}
+    <main class="main-content">
+<div class="container-fluid mt-4">
+    <h2><i class="material-icons">search</i> Search Vault</h2>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="get">
+                {{ form|crispy }}
+                <button type="submit" class="btn btn-primary">
+                    <i class="material-icons">search</i> Search
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if results %}
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5>Search Results</h5>
+                <!-- Search results would go here -->
+                <p class="text-muted">Search functionality coming soon...</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+    </main>
+</div>
+{% endblock %}

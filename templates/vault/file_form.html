@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Upload File - Vault{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    {% include 'components/sidebar.html' %}
+    <main class="main-content">
+<div class="container mt-4">
+    <h2><i class="material-icons">upload_file</i> Upload Encrypted File</h2>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form|crispy }}
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="material-icons">upload</i> Upload
+                    </button>
+                    <a href="{% url 'vault:file_list' %}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+    </main>
+</div>
+{% endblock %}

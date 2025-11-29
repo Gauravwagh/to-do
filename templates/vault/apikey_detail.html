@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ apikey.decrypted_name }} - Vault{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    {% include 'components/sidebar.html' %}
+    <main class="main-content">
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="material-icons">vpn_key</i> {{ apikey.decrypted_name }}</h2>
+        <div>
+            <a href="{% url 'vault:apikey_update' apikey.pk %}" class="btn btn-primary">
+                <i class="material-icons">edit</i> Edit
+            </a>
+            <a href="{% url 'vault:apikey_delete' apikey.pk %}" class="btn btn-danger">
+                <i class="material-icons">delete</i> Delete
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Service</dt>
+                <dd class="col-sm-9">{{ apikey.decrypted_service_name }}</dd>
+
+                <dt class="col-sm-3">Type</dt>
+                <dd class="col-sm-9">{{ apikey.get_api_key_type_display }}</dd>
+
+                <dt class="col-sm-3">API Key</dt>
+                <dd class="col-sm-9">
+                    <textarea class="form-control" readonly rows="3">{{ apikey.decrypted_api_key }}</textarea>
+                </dd>
+
+                {% if apikey.decrypted_api_secret %}
+                    <dt class="col-sm-3">API Secret</dt>
+                    <dd class="col-sm-9">
+                        <textarea class="form-control" readonly rows="3">{{ apikey.decrypted_api_secret }}</textarea>
+                    </dd>
+                {% endif %}
+
+                {% if apikey.expires_at %}
+                    <dt class="col-sm-3">Expires</dt>
+                    <dd class="col-sm-9">{{ apikey.expires_at }}</dd>
+                {% endif %}
+
+                {% if apikey.decrypted_notes %}
+                    <dt class="col-sm-3">Notes</dt>
+                    <dd class="col-sm-9">{{ apikey.decrypted_notes|linebreaks }}</dd>
+                {% endif %}
+
+                <dt class="col-sm-3">Created</dt>
+                <dd class="col-sm-9">{{ apikey.created }}</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+    </main>
+</div>
+{% endblock %}
