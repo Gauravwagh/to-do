@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Audit Log - Vault{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    {% include 'components/sidebar.html' %}
+    <main class="main-content">
+<div class="container-fluid mt-4">
+    <h2><i class="material-icons">history</i> Audit Log</h2>
+
+    {% if logs %}
+        <div class="card mt-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Action</th>
+                                <th>Item Type</th>
+                                <th>Success</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.timestamp }}</td>
+                                    <td>{{ log.get_action_display }}</td>
+                                    <td>{{ log.item_type|default:"-" }}</td>
+                                    <td>
+                                        {% if log.success %}
+                                            <span class="badge bg-success">Success</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.ip_address }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4">
+            No audit logs yet.
+        </div>
+    {% endif %}
+</div>
+    </main>
+</div>
+{% endblock %}

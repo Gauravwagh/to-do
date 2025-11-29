@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Unlock Vault{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="material-icons" style="font-size: 48px; color: #1976d2;">lock</i>
+                        <h2 class="mt-3">Unlock Vault</h2>
+                        <p class="text-muted">Enter your master password</p>
+                    </div>
+
+                    {% if locked %}
+                        <div class="alert alert-danger border-0 shadow-sm" style="border-left: 4px solid #dc2626;">
+                            <div class="d-flex align-items-center">
+                                <i class="material-icons text-danger me-2" style="font-size: 32px;">lock_clock</i>
+                                <div>
+                                    <strong>Vault Locked!</strong><br>
+                                    <small>Too many failed attempts. Try again in {{ remaining_minutes }} minutes.</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+
+                            <div class="alert alert-warning border-0 mt-3" style="font-size: 0.875rem;">
+                                <i class="material-icons" style="font-size: 18px; vertical-align: middle;">info</i>
+                                <small>Maximum 5 failed attempts allowed before temporary lockout</small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 mt-3">
+                                <i class="material-icons">lock_open</i> Unlock
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-3">
+                            <a href="{% url 'vault:setup' %}" class="text-muted small">First time? Set up your vault</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

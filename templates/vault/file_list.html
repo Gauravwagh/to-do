@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Files - Vault{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    {% include 'components/sidebar.html' %}
+    <main class="main-content">
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="material-icons">folder</i> Encrypted Files</h2>
+        <a href="{% url 'vault:file_create' %}" class="btn btn-primary">
+            <i class="material-icons">upload_file</i> Upload File
+        </a>
+    </div>
+
+    {% if files %}
+        <div class="card">
+            <div class="card-body">
+                <div class="list-group">
+                    {% for file in files %}
+                        <a href="{% url 'vault:file_detail' file.pk %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">{{ file.decrypted_name }}</h5>
+                                    <small class="text-muted">{{ file.decrypted_filename }} - {{ file.get_file_size_human }}</small>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">No files yet. <a href="{% url 'vault:file_create' %}">Upload your first file</a></p>
+        </div>
+    {% endif %}
+</div>
+    </main>
+</div>
+{% endblock %}

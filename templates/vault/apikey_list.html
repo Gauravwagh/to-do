@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}API Keys - Vault{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    {% include 'components/sidebar.html' %}
+    <main class="main-content">
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="material-icons">vpn_key</i> API Keys</h2>
+        <a href="{% url 'vault:apikey_create' %}" class="btn btn-primary">
+            <i class="material-icons">add</i> New API Key
+        </a>
+    </div>
+
+    {% if apikeys %}
+        <div class="card">
+            <div class="card-body">
+                <div class="list-group">
+                    {% for apikey in apikeys %}
+                        <a href="{% url 'vault:apikey_detail' apikey.pk %}" class="list-group-item list-group-item-action">
+                            <h5 class="mb-1">{{ apikey.decrypted_name }}</h5>
+                            <small class="text-muted">{{ apikey.decrypted_service_name }} - {{ apikey.get_api_key_type_display }}</small>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">No API keys yet. <a href="{% url 'vault:apikey_create' %}">Add your first API key</a></p>
+        </div>
+    {% endif %}
+</div>
+    </main>
+</div>
+{% endblock %}
