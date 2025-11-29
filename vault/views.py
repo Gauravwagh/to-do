@@ -224,13 +224,17 @@ class VaultUnlockView(LoginRequiredMixin, FormView):
                 # Reset failed attempts
                 vault_config.reset_failed_attempts()
 
-                # Create vault session record
-                VaultSession.objects.create(
-                    user=self.request.user,
+                # Create or update vault session record
+                VaultSession.objects.update_or_create(
                     session_key=self.request.session.session_key,
-                    expires_at=timezone.now() + timezone.timedelta(minutes=vault_config.vault_timeout_minutes),
-                    ip_address=get_client_ip(self.request),
-                    user_agent=self.request.META.get('HTTP_USER_AGENT', '')[:255]
+                    defaults={
+                        'user': self.request.user,
+                        'expires_at': timezone.now() + timezone.timedelta(minutes=vault_config.vault_timeout_minutes),
+                        'ip_address': get_client_ip(self.request),
+                        'user_agent': self.request.META.get('HTTP_USER_AGENT', '')[:255],
+                        'is_active': True,
+                        'unlocked_at': timezone.now(),
+                    }
                 )
 
                 # Log successful unlock
