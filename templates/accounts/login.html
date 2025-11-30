@@ -1,39 +1,114 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}Login - Notes & To-Do's{% endblock %}
+{% block title %}Login - Notes & Todos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-wrapper {
+        min-height: calc(100vh - var(--navbar-height) - 100px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--space-6);
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--bg-primary);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border-default);
+        padding: var(--space-8);
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: var(--space-6);
+    }
+
+    .auth-logo {
+        width: 56px;
+        height: 56px;
+        background: var(--primary-light);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto var(--space-4);
+    }
+
+    .auth-logo i {
+        font-size: 1.75rem;
+        color: var(--primary-color);
+    }
+
+    .auth-header h2 {
+        font-size: 1.5rem;
+        margin-bottom: var(--space-2);
+    }
+
+    .auth-header p {
+        color: var(--text-tertiary);
+        margin: 0;
+        font-size: 0.875rem;
+    }
+
+    .auth-form .form-group {
+        margin-bottom: var(--space-4);
+    }
+
+    .auth-form .form-label {
+        font-size: 0.8125rem;
+    }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: var(--space-5);
+        padding-top: var(--space-5);
+        border-top: 1px solid var(--border-light);
+    }
+
+    .auth-footer p {
+        font-size: 0.875rem;
+        color: var(--text-tertiary);
+        margin: 0;
+    }
+
+    .auth-footer a {
+        color: var(--primary-color);
+        font-weight: 500;
+    }
+
+    .auth-footer a:hover {
+        color: var(--primary-hover);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="auth-container">
+<div class="auth-wrapper">
+    <div class="auth-card">
         <div class="auth-header">
-            <h2><i class="fas fa-sticky-note text-success me-2"></i>Welcome Back</h2>
-            <p class="text-muted">Sign in to your account</p>
+            <div class="auth-logo">
+                <i class="material-icons">edit_note</i>
+            </div>
+            <h2>Welcome back</h2>
+            <p>Sign in to your Notes & Todos account</p>
         </div>
-        
-        <form method="post">
+
+        <form method="post" class="auth-form">
             {% csrf_token %}
             {{ form|crispy }}
-            
-            <div class="d-grid gap-2 mt-3">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
-                </button>
-            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+                Sign In
+            </button>
         </form>
-        
-        <div class="auth-links">
-            <p>Don't have an account? <a href="{% url 'accounts:signup' %}">Sign up here</a></p>
+
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{% url 'accounts:signup' %}">Create one</a></p>
         </div>
     </div>
 </div>
 {% endblock %}
-
-
-
-
-
-
-
-
-

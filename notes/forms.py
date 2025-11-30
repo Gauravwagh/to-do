@@ -6,6 +6,11 @@ from taggit.forms import TagWidget
 User = get_user_model()
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    """Custom widget that allows multiple file selection."""
+    allow_multiple_selected = True
+
+
 class NoteForm(forms.ModelForm):
     """Form for creating and editing notes."""
     
@@ -377,10 +382,9 @@ class MultipleAttachmentForm(forms.Form):
     """Form for uploading multiple attachments at once."""
 
     files = forms.FileField(
-        widget=forms.FileInput(attrs={
+        widget=MultipleFileInput(attrs={
             'class': 'form-control',
             'accept': 'image/*,application/pdf,.doc,.docx,.txt,.rtf,.odt,audio/*,video/*,.zip,.rar,.7z,.tar,.gz',
-            'multiple': True,
         }),
         help_text='Select multiple files to upload (max 10MB each)'
     )
