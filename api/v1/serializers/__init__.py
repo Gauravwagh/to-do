@@ -21,6 +21,13 @@ from .todos import (
     TodoBulkUpdateSerializer,
 )
 from .tags import TagSerializer
+from .auth import (
+    UserSerializer,
+    UserRegistrationSerializer,
+    UserProfileUpdateSerializer,
+    PasswordChangeSerializer,
+    CustomTokenObtainPairSerializer,
+)
 
 __all__ = [
     # Notebooks
@@ -43,4 +50,10 @@ __all__ = [
     'TodoBulkUpdateSerializer',
     # Tags
     'TagSerializer',
+    # Auth
+    'UserSerializer',
+    'UserRegistrationSerializer',
+    'UserProfileUpdateSerializer',
+    'PasswordChangeSerializer',
+    'CustomTokenObtainPairSerializer',
 ]
