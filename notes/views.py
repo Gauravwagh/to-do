@@ -1067,3 +1067,16 @@ class NotebookDeleteView(LoginRequiredMixin, DeleteView):
         )
         
         return super().delete(request, *args, **kwargs)
+
+
+def sentry_test_error(request):
+    """Test view to trigger a Sentry error."""
+    from sentry_sdk import capture_message
+    
+    # Send a test message first
+    capture_message('🧪 Sentry Test: Manual test triggered from agspace.in', level='info')
+    
+    # Now trigger an intentional error
+    division_by_zero = 1 / 0
+    
+    return JsonResponse({'status': 'This should never be reached'})

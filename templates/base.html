@@ -14,19 +14,23 @@
     <!-- Custom CSS -->
     {% load static %}
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
-    
+    <link href="{% static 'css/responsive.css' %}" rel="stylesheet">
+    <link href="{% static 'css/mobile.css' %}" rel="stylesheet">
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Berry Vue Style Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'notes:dashboard' %}">
-                <i class="material-icons">edit_note</i>Notes & Todos
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'notes:dashboard' %}">
+                <i class="material-icons me-1">edit_note</i>
+                <span class="d-none d-sm-inline">Notes & Todos</span>
+                <span class="d-inline d-sm-none">Notes</span>
             </a>
-            
+
             {% if user.is_authenticated %}
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
@@ -65,9 +69,9 @@
                 </ul>
                 
                 <!-- Search -->
-                <form class="d-flex me-3" method="GET" action="{% url 'notes:search' %}">
+                <form class="d-flex me-lg-3 mb-3 mb-lg-0" method="GET" action="{% url 'notes:search' %}">
                     <div class="input-group">
-                        <input class="form-control border-end-0" type="search" name="q" placeholder="Search notes..." 
+                        <input class="form-control border-end-0" type="search" name="q" placeholder="Search notes..."
                                value="{{ request.GET.q }}" style="border-radius: 8px 0 0 8px;">
                         <button class="btn btn-outline-secondary border-start-0" type="submit" style="border-radius: 0 8px 8px 0;">
                             <i class="material-icons">search</i>

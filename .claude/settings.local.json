@@ -24,7 +24,17 @@
       "Bash(cat:*)",
       "Bash(echo:*)",
       "Bash(uv pip list:*)",
-      "Bash(uv pip show:*)"
+      "Bash(uv pip show:*)",
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(ssh:*)",
+      "Bash(./deploy_manual.sh:*)",
+      "Bash(./setup_ssh.sh)",
+      "Bash(scp:*)",
+      "Bash(curl -I http://46.224.109.101)",
+      "Bash(curl -s http://46.224.109.101)",
+      "Bash(curl:*)",
+      "Bash(dig:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,26 @@
+[Unit]
+Description=Gunicorn daemon for Evernote Clone
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/evernote_clone
+Environment="PATH=/var/www/evernote_clone/venv/bin"
+EnvironmentFile=/var/www/evernote_clone/.env
+ExecStart=/var/www/evernote_clone/venv/bin/gunicorn \
+    --workers 3 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile /var/www/evernote_clone/logs/gunicorn-access.log \
+    --error-logfile /var/www/evernote_clone/logs/gunicorn-error.log \
+    --log-level info \
+    config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

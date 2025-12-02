@@ -11,7 +11,16 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="content-header">
+        <!-- Mobile Header -->
+        <div class="mobile-only mobile-page-header">
+            <h1 class="mobile-page-title">Todos</h1>
+            <a href="{% url 'notes:note_create' %}" class="btn btn-sm btn-primary">
+                <i class="material-icons" style="font-size: 18px;">add</i>
+            </a>
+        </div>
+
+        <!-- Desktop Header -->
+        <div class="content-header desktop-only">
             <div class="header-left">
                 <h1>Todos</h1>
                 <p class="text-muted">Manage all your tasks across notes and notebooks</p>
@@ -22,9 +31,43 @@
                 </a>
             </div>
         </div>
-            
-            <!-- Statistics Cards -->
-            <div class="row mb-4">
+
+        <!-- Mobile Stats -->
+        <div class="mobile-only mobile-stats-grid">
+            <div class="mobile-stat-card blue">
+                <div class="mobile-stat-number">{{ total_todos }}</div>
+                <div class="mobile-stat-label">Total</div>
+            </div>
+            <div class="mobile-stat-card green">
+                <div class="mobile-stat-number">{{ completed_todos }}</div>
+                <div class="mobile-stat-label">Completed</div>
+            </div>
+            <div class="mobile-stat-card orange">
+                <div class="mobile-stat-number">{{ pending_todos }}</div>
+                <div class="mobile-stat-label">Pending</div>
+            </div>
+            <div class="mobile-stat-card purple">
+                <div class="mobile-stat-number">{{ in_progress_todos }}</div>
+                <div class="mobile-stat-label">In Progress</div>
+            </div>
+            <div class="mobile-stat-card red">
+                <div class="mobile-stat-number">{{ overdue_todos }}</div>
+                <div class="mobile-stat-label">Overdue</div>
+            </div>
+            <div class="mobile-stat-card gray">
+                <div class="mobile-stat-number">
+                    {% if total_todos > 0 %}
+                        {% widthratio completed_todos total_todos 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </div>
+                <div class="mobile-stat-label">Complete</div>
+            </div>
+        </div>
+
+            <!-- Desktop Statistics Cards -->
+            <div class="row mb-4 desktop-only">
                 <div class="col-md-2 col-sm-6 mb-3">
                     <div class="card bg-primary text-white">
                         <div class="card-body text-center">
@@ -81,8 +124,16 @@
                 </div>
             </div>
             
-            <!-- Advanced Filters -->
-            <div class="card mb-4">
+            <!-- Mobile Filters -->
+            <div class="mobile-only mobile-filters">
+                <button class="mobile-filter-chip {% if status_filter == 'all' %}active{% endif %}" onclick="location.href='?status=all'">All</button>
+                <button class="mobile-filter-chip {% if status_filter == 'pending' %}active{% endif %}" onclick="location.href='?status=pending'">Pending</button>
+                <button class="mobile-filter-chip {% if status_filter == 'in_progress' %}active{% endif %}" onclick="location.href='?status=in_progress'">In Progress</button>
+                <button class="mobile-filter-chip {% if status_filter == 'completed' %}active{% endif %}" onclick="location.href='?status=completed'">Completed</button>
+            </div>
+
+            <!-- Desktop Advanced Filters -->
+            <div class="card mb-4 desktop-only">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-filter me-2"></i>Advanced Filters
@@ -168,9 +219,59 @@
                 </div>
             </div>
             
-            <!-- Todo List -->
+            <!-- Mobile Todo List -->
             {% if todos %}
-            <div class="row">
+            <div class="mobile-only">
+                {% for todo in todos %}
+                <a href="{% if todo.note %}{% url 'notes:todo_edit' todo.note.slug todo.id %}{% else %}{% url 'notes:standalone_todo_edit' todo.id %}{% endif %}" style="text-decoration: none; color: inherit;">
+                    <div class="mobile-todo-item {% if todo.status %}{{ todo.status }}{% else %}pending{% endif %}">
+                        <input class="mobile-todo-checkbox" type="checkbox" {% if todo.is_completed %}checked{% endif %} onclick="event.preventDefault(); event.stopPropagation();">
+                        <div class="mobile-todo-content">
+                            <div class="mobile-todo-title">{{ todo.title }}</div>
+                            <div class="mobile-todo-meta">
+                                <span class="mobile-priority-badge {% if todo.priority == 'high' or todo.priority == 'urgent' %}high{% elif todo.priority == 'medium' %}medium{% else %}low{% endif %}">
+                                    {{ todo.get_priority_display|default:"Medium" }}
+                                </span>
+                                {% if todo.due_date %}
+                                <span><i class="material-icons" style="font-size: 12px; vertical-align: middle;">schedule</i> {{ todo.due_date|date:"M d" }}</span>
+                                {% endif %}
+                                {% if todo.note %}
+                                <span><i class="material-icons" style="font-size: 12px; vertical-align: middle;">note</i> {{ todo.note.title|truncatechars:15 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- Mobile FAB -->
+            <a href="{% url 'notes:note_create' %}" class="mobile-only mobile-fab">
+                <i class="material-icons">add</i>
+            </a>
+            {% else %}
+            <!-- Mobile Empty State -->
+            <div class="mobile-only mobile-empty-state">
+                <div class="mobile-empty-icon">
+                    <i class="material-icons">assignment</i>
+                </div>
+                <h3 class="mobile-empty-title">No Todos Yet</h3>
+                <p class="mobile-empty-text">
+                    {% if search_query or status_filter != 'all' or priority_filter != 'all' %}
+                    Try adjusting your filters to see more results.
+                    {% else %}
+                    Create your first todo to start managing your tasks effectively.
+                    {% endif %}
+                </p>
+                <a href="{% url 'notes:note_create' %}" class="btn btn-primary">
+                    <i class="material-icons me-1">add</i>Create Todo
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Desktop Todo List -->
+            {% if todos %}
+            <div class="row desktop-only">
                 {% for todo in todos %}
                 <div class="col-md-6 col-lg-4 mb-3">
                     <div class="card todo-card {% if todo.is_completed %}completed{% endif %} priority-{{ todo.priority }}">
@@ -304,9 +405,9 @@
                 {% endfor %}
             </div>
             
-            <!-- Pagination -->
+            <!-- Pagination (Desktop Only) -->
             {% if todos.has_other_pages %}
-            <nav aria-label="Todo pagination">
+            <nav aria-label="Todo pagination" class="desktop-only">
                 <ul class="pagination justify-content-center">
                     {% if todos.has_previous %}
                     <li class="page-item">
@@ -316,13 +417,13 @@
                         <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ todos.previous_page_number }}">Previous</a>
                     </li>
                     {% endif %}
-                    
+
                     <li class="page-item active">
                         <span class="page-link">
                             Page {{ todos.number }} of {{ todos.paginator.num_pages }}
                         </span>
                     </li>
-                    
+
                     {% if todos.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ todos.next_page_number }}">Next</a>
@@ -334,9 +435,10 @@
                 </ul>
             </nav>
             {% endif %}
-            
+
             {% else %}
-            <div class="text-center py-5">
+            <!-- Desktop Empty State -->
+            <div class="text-center py-5 desktop-only">
                 <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
                 <h4 class="text-muted">No todos found</h4>
                 <p class="text-muted">

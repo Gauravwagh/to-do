@@ -2,6 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all modules
+    initializeMobileMenu();
     initializeTinyMCE();
     initializeClipboard();
     initializeNoteCards();
@@ -10,6 +11,27 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeFormEnhancements();
     initializeTodoInteractions();
 });
+
+// ===== Mobile Menu =====
+function initializeMobileMenu() {
+    // On mobile (<992px), sidebar is hidden via CSS
+    // Navbar toggler handles the Bootstrap collapse menu only
+    // No additional sidebar functionality needed on mobile
+
+    // Auto-close navbar menu when clicking a link
+    const navbarCollapse = document.querySelector('.navbar-collapse');
+    if (navbarCollapse && window.innerWidth < 992) {
+        const navLinks = navbarCollapse.querySelectorAll('a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+                if (bsCollapse) {
+                    bsCollapse.hide();
+                }
+            });
+        });
+    }
+}
 
 // ===== Note Cards =====
 function initializeNoteCards() {

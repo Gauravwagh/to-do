@@ -54,12 +54,15 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # CORS handling
+    'config.middleware.error_handler.RequestIDMiddleware',  # Add request ID tracking
+    'config.middleware.error_handler.SentryContextMiddleware',  # Add Sentry context
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.error_handler.ErrorHandlingMiddleware',  # Handle all exceptions
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -206,33 +209,11 @@ CACHES = {
 }
 
 # Logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': False,
-        },
-    },
-}
+# Import comprehensive logging configuration
+from .logging import get_logging_config
+
+# Set up logging based on DEBUG mode
+LOGGING = get_logging_config(debug=False)  # Will be overridden in local.py for dev
 
 # ==============================================================================
 # REST FRAMEWORK SETTINGS

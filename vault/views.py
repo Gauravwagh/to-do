@@ -32,10 +32,10 @@ def get_client_ip(request):
     """Get client IP address from request."""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
+        ip = x_forwarded_for.split(',')[0].strip()
     else:
         ip = request.META.get('REMOTE_ADDR')
-    return ip
+    return ip if ip else None
 
 
 def log_vault_action(request, action, success=True, item_type=None, item_id=None, details=None):
@@ -197,10 +197,14 @@ class VaultUnlockView(LoginRequiredMixin, FormView):
         vault_config = self.request.user.vault_config
 
         try:
+            # Convert BinaryField values to bytes if they're memoryview
+            master_password_salt = bytes(vault_config.master_password_salt)
+            encrypted_dek = bytes(vault_config.encrypted_dek)
+
             # Verify master password
             is_valid = VaultCryptoService.verify_master_password(
                 master_password,
-                vault_config.master_password_salt,
+                master_password_salt,
                 vault_config.master_password_hash,
                 vault_config.kdf_iterations
             )
@@ -209,10 +213,10 @@ class VaultUnlockView(LoginRequiredMixin, FormView):
                 # Decrypt DEK
                 master_key = VaultCryptoService.derive_key_from_master_password(
                     master_password,
-                    vault_config.master_password_salt,
+                    master_password_salt,
                     vault_config.kdf_iterations
                 )
-                dek = VaultCryptoService.decrypt_dek(vault_config.encrypted_dek, master_key)
+                dek = VaultCryptoService.decrypt_dek(encrypted_dek, master_key)
 
                 # Store DEK in session
                 VaultSessionManager.store_dek_in_session(
@@ -225,6 +229,10 @@ class VaultUnlockView(LoginRequiredMixin, FormView):
                 vault_config.reset_failed_attempts()
 
                 # Create or update vault session record
+                # Ensure session has a key
+                if not self.request.session.session_key:
+                    self.request.session.create()
+
                 VaultSession.objects.update_or_create(
                     session_key=self.request.session.session_key,
                     defaults={
@@ -1012,10 +1020,13 @@ class VaultReAuthView(VaultRequiredMixin, FormView):
         master_password = form.cleaned_data['master_password']
         vault_config = self.request.user.vault_config
 
+        # Convert BinaryField values to bytes if they're memoryview
+        master_password_salt = bytes(vault_config.master_password_salt)
+
         # Verify master password
         is_valid = VaultCryptoService.verify_master_password(
             master_password,
-            vault_config.master_password_salt,
+            master_password_salt,
             vault_config.master_password_hash,
             vault_config.kdf_iterations
         )
