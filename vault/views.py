@@ -180,17 +180,21 @@ class VaultUnlockView(LoginRequiredMixin, FormView):
         if VaultSessionManager.is_vault_unlocked(request):
             return redirect('vault:dashboard')
 
-        # Check if vault is locked due to failed attempts
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        vault_config = self.request.user.vault_config
+
+        # Always check if vault is locked and pass to template
         if vault_config.is_locked():
             remaining_time = (vault_config.locked_until - timezone.now()).seconds // 60
-            messages.error(
-                request,
-                f'Vault is temporarily locked due to too many failed attempts. '
-                f'Try again in {remaining_time} minutes.'
-            )
-            return render(request, self.template_name, {'locked': True, 'remaining_minutes': remaining_time})
+            context['locked'] = True
+            context['remaining_minutes'] = remaining_time
+        else:
+            context['locked'] = False
 
-        return super().dispatch(request, *args, **kwargs)
+        return context
 
     def form_valid(self, form):
         master_password = form.cleaned_data['master_password']
@@ -262,13 +266,7 @@ class VaultUnlockView(LoginRequiredMixin, FormView):
                     vault_config.save()
 
                     log_vault_action(self.request, 'failed_unlock', success=False)
-                    from django.contrib.messages import constants as message_constants
-                    messages.add_message(
-                        self.request,
-                        message_constants.ERROR,
-                        f'Too many failed attempts. Vault locked for {lockout_minutes} minutes.',
-                        extra_tags='danger'
-                    )
+                    # Error will be shown via template context in get_context_data()
                 else:
                     vault_config.save()
                     remaining_attempts = vault_config.max_failed_attempts - vault_config.failed_attempts
