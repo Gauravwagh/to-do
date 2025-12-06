@@ -79,8 +79,8 @@
                     </div>
                 </form>
                 
-                <!-- User Menu -->
-                <div class="dropdown">
+                <!-- User Menu - Desktop Dropdown -->
+                <div class="dropdown d-none d-lg-block">
                     <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#" role="button" data-bs-toggle="dropdown">
                         {% if user.avatar %}
                             <img src="{{ user.avatar.url }}" alt="Avatar" class="rounded-circle me-2" width="32" height="32">
@@ -101,6 +101,32 @@
                         </a></li>
                     </ul>
                 </div>
+
+                <!-- User Menu - Mobile Direct Links -->
+                <ul class="navbar-nav d-lg-none">
+                    <li class="nav-item">
+                        <div class="nav-link d-flex align-items-center text-dark disabled">
+                            {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" alt="Avatar" class="rounded-circle me-2" width="32" height="32">
+                            {% else %}
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                    <i class="material-icons" style="font-size: 18px;">person</i>
+                                </div>
+                            {% endif %}
+                            <span class="fw-medium">{{ user.full_name|default:user.username }}</span>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-medium text-dark" href="{% url 'accounts:profile' %}">
+                            <i class="material-icons me-1">person</i>Profile
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-medium text-danger" href="{% url 'accounts:logout' %}">
+                            <i class="material-icons me-1">exit_to_app</i>Logout
+                        </a>
+                    </li>
+                </ul>
             </div>
             {% endif %}
         </div>
