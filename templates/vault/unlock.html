@@ -19,9 +19,9 @@
                         <div class="alert alert-danger border-0 shadow-sm" style="border-left: 4px solid #dc2626;">
                             <div class="d-flex align-items-center">
                                 <i class="material-icons text-danger me-2" style="font-size: 32px;">lock_clock</i>
-                                <div>
+                                <div class="w-100">
                                     <strong>Vault Locked!</strong><br>
-                                    <small>Too many failed attempts. Try again in {{ remaining_minutes }} minutes.</small>
+                                    <small>Too many failed attempts. Try again in <span id="countdown-timer" class="fw-bold">{{ remaining_minutes }} minutes</span>.</small>
                                 </div>
                             </div>
                         </div>
@@ -49,4 +49,46 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if locked %}
+<script>
+    // Countdown timer for vault lockout
+    const lockedUntil = new Date("{{ locked_until }}");
+    const countdownElement = document.getElementById('countdown-timer');
+
+    function updateCountdown() {
+        const now = new Date();
+        const remaining = lockedUntil - now;
+
+        if (remaining <= 0) {
+            // Lockout expired, reload page
+            countdownElement.textContent = 'unlocking...';
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+            return;
+        }
+
+        // Calculate minutes and seconds
+        const totalSeconds = Math.floor(remaining / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        // Format the display
+        if (minutes > 0) {
+            countdownElement.textContent = `${minutes}m ${seconds}s`;
+        } else {
+            countdownElement.textContent = `${seconds}s`;
+        }
+    }
+
+    // Update immediately
+    updateCountdown();
+
+    // Update every second
+    const interval = setInterval(updateCountdown, 1000);
+</script>
+{% endif %}
 {% endblock %}

@@ -191,6 +191,7 @@ class VaultUnlockView(LoginRequiredMixin, FormView):
             remaining_time = (vault_config.locked_until - timezone.now()).seconds // 60
             context['locked'] = True
             context['remaining_minutes'] = remaining_time
+            context['locked_until'] = vault_config.locked_until.isoformat()
         else:
             context['locked'] = False
 
