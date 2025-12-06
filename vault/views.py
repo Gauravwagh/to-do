@@ -184,7 +184,13 @@ class VaultUnlockView(LoginRequiredMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        vault_config = self.request.user.vault_config
+
+        # Refresh vault_config from database to avoid cached data
+        try:
+            vault_config = VaultConfig.objects.get(user=self.request.user)
+        except VaultConfig.DoesNotExist:
+            context['locked'] = False
+            return context
 
         # Always check if vault is locked and pass to template
         if vault_config.is_locked():
