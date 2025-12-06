@@ -66,12 +66,9 @@
 
                     {% if locked %}
                         <div class="lockout-banner">
-                            <div class="d-flex align-items-center mb-3">
+                            <div class="d-flex align-items-center justify-content-center mb-3">
                                 <i class="material-icons lock-icon me-3">lock_clock</i>
-                                <div class="flex-grow-1">
-                                    <div class="lockout-title">Vault Locked!</div>
-                                    <p class="lockout-message">Too many failed password attempts.</p>
-                                </div>
+                                <p class="lockout-message mb-0">Too many failed password attempts.</p>
                             </div>
                             <div class="text-center">
                                 <p class="lockout-message mb-2">Try again in:</p>
