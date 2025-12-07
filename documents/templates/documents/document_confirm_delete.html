@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ document.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger shadow">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Warning:</strong> This action cannot be undone!
+                    </div>
+
+                    <p>Are you sure you want to delete this document?</p>
+
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h5>{{ document.title }}</h5>
+                            <p class="mb-1"><strong>File:</strong> {{ document.file_original_name }}</p>
+                            <p class="mb-1"><strong>Type:</strong> {{ document.get_file_type_display }}</p>
+                            <p class="mb-1"><strong>Size:</strong> {{ document.file_size_display }}</p>
+                            <p class="mb-0"><strong>Uploaded:</strong> {{ document.upload_date|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mb-4">
+                        <h6>What will be deleted:</h6>
+                        <ul class="mb-0">
+                            <li>The document file</li>
+                            <li>All metadata and compression data</li>
+                            <li>Share history and access logs</li>
+                            <li>Backup copies (if any)</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'documents:document_detail' document.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Yes, Delete Document
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

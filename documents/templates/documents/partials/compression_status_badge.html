@@ -1,0 +1,32 @@
+{% if document.is_compressed %}
+<span class="badge bg-success" title="Compressed with {{ document.compression_algorithm|upper }}">
+    <i class="fas fa-compress"></i>
+    {{ document.compression_ratio_percentage }}% saved
+    <br>
+    <small>{{ document.compression_algorithm|upper }}</small>
+</span>
+{% else %}
+<span class="badge
+    {% if document.compression_status == 'pending' %}bg-warning
+    {% elif document.compression_status == 'compressing' %}bg-info
+    {% elif document.compression_status == 'failed' %}bg-danger
+    {% elif document.compression_status == 'skipped' %}bg-secondary
+    {% else %}bg-light text-dark{% endif %}"
+    {% if document.compression_status == 'compressing' %}
+        hx-get="{% url 'documents:compression_status' document.id %}"
+        hx-trigger="every 3s"
+        hx-swap="outerHTML"
+    {% endif %}>
+    {% if document.compression_status == 'pending' %}
+        <i class="fas fa-clock"></i> Pending
+    {% elif document.compression_status == 'compressing' %}
+        <i class="fas fa-spinner fa-spin"></i> Compressing...
+    {% elif document.compression_status == 'failed' %}
+        <i class="fas fa-exclamation-triangle"></i> Failed
+    {% elif document.compression_status == 'skipped' %}
+        <i class="fas fa-ban"></i> Skipped
+    {% else %}
+        <i class="fas fa-file"></i> Uncompressed
+    {% endif %}
+</span>
+{% endif %}

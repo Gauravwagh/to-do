@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Storage Statistics{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-database"></i> Storage Statistics</h1>
+            <p class="text-muted">Monitor your storage usage and compression savings</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'documents:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Storage Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Total Quota</h6>
+                    <h2 class="text-primary">{{ quota.original_quota|filesizeformat }}</h2>
+                    <p class="mb-0 small text-muted">Allocated Storage</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Used (Original)</h6>
+                    <h2 class="text-warning">{{ quota.original_used|filesizeformat }}</h2>
+                    <p class="mb-0 small text-muted">{{ quota.original_used_percentage }}% of quota</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Actual Storage</h6>
+                    <h2 class="text-info">{{ quota.compressed_used|filesizeformat }}</h2>
+                    <p class="mb-0 small text-muted">After Compression</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Savings</h6>
+                    <h2 class="text-success">{{ quota.compression_savings|filesizeformat }}</h2>
+                    <p class="mb-0 small text-muted">{{ quota.compression_ratio|floatformat:0 }}% ratio</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Progress Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Storage Usage</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-2">Original Size</h6>
+                    <div class="progress mb-3" style="height: 30px;">
+                        <div class="progress-bar {% if quota.original_used_percentage > 90 %}bg-danger{% elif quota.original_used_percentage > 75 %}bg-warning{% else %}bg-primary{% endif %}"
+                             role="progressbar"
+                             style="width: {{ quota.original_used_percentage }}%">
+                            {{ quota.original_used_percentage }}%
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">Used</small>
+                            <p class="mb-0"><strong>{{ quota.original_used|filesizeformat }}</strong></p>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Available</small>
+                            <p class="mb-0"><strong>{{ quota.original_available|filesizeformat }}</strong></p>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Total</small>
+                            <p class="mb-0"><strong>{{ quota.original_quota|filesizeformat }}</strong></p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="mb-2">Actual Disk Usage (After Compression)</h6>
+                    <div class="progress mb-3" style="height: 30px;">
+                        <div class="progress-bar bg-success"
+                             role="progressbar"
+                             style="width: {% widthratio quota.compressed_used quota.original_quota 100 %}%">
+                            {% widthratio quota.compressed_used quota.original_quota 100 %}%
+                        </div>
+                    </div>
+                    <p class="text-center mb-0">
+                        <i class="fas fa-compress text-success"></i>
+                        Compression saved <strong>{{ quota.compression_savings|filesizeformat }}</strong>
+                        of disk space!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents by Type -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Documents by Type</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>File Type</th>
+                                    <th class="text-end">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in documents_by_type %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ item.file_type|upper }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">{{ item.count }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">No documents yet</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-7">Total Documents:</dt>
+                        <dd class="col-sm-5 text-end">{{ quota.document_count }}</dd>
+
+                        <dt class="col-sm-7">Average File Size:</dt>
+                        <dd class="col-sm-5 text-end">
+                            {% if quota.document_count > 0 %}
+                            {% widthratio quota.original_used quota.document_count 1 %}
+                            bytes
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-7">Compression Ratio:</dt>
+                        <dd class="col-sm-5 text-end">{{ quota.compression_ratio|floatformat:2 }}</dd>
+
+                        <dt class="col-sm-7">Last Calculated:</dt>
+                        <dd class="col-sm-5 text-end">{{ quota.last_calculated|naturaltime }}</dd>
+                    </dl>
+
+                    <hr>
+
+                    <form method="post" action="/api/v1/documents/storage/recalculate/">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="fas fa-sync"></i> Recalculate Storage
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warnings and Recommendations -->
+    {% if quota.original_used_percentage > 90 %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle"></i> Storage Almost Full</h5>
+                <p class="mb-2">You're using {{ quota.original_used_percentage }}% of your storage quota!</p>
+                <strong>Recommendations:</strong>
+                <ul class="mb-0">
+                    <li>Delete unnecessary documents</li>
+                    <li>Compress uncompressed documents</li>
+                    <li>Upgrade your storage plan</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% elif quota.original_used_percentage > 75 %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <i class="fas fa-info-circle"></i>
+                <strong>Storage Warning:</strong> You're using {{ quota.original_used_percentage }}% of your storage quota.
+                Consider cleaning up old documents or upgrading your plan.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Compression Impact -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-leaf"></i> Environmental Impact</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        By compressing your documents, you're saving {{ quota.compression_savings|filesizeformat }}
+                        of storage space. This reduces energy consumption and helps the environment!
+                    </p>
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <i class="fas fa-tree fa-2x text-success mb-2"></i>
+                            <p class="mb-0"><strong>Less Server Load</strong></p>
+                            <small class="text-muted">Reduced processing power needed</small>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="fas fa-bolt fa-2x text-success mb-2"></i>
+                            <p class="mb-0"><strong>Lower Energy Use</strong></p>
+                            <small class="text-muted">Less electricity consumed</small>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="fas fa-server fa-2x text-success mb-2"></i>
+                            <p class="mb-0"><strong>Efficient Storage</strong></p>
+                            <small class="text-muted">Optimal disk utilization</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

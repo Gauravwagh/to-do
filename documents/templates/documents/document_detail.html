@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ document.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'documents:dashboard' %}">Documents</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'documents:document_list' %}">All Documents</a></li>
+                    <li class="breadcrumb-item active">{{ document.title }}</li>
+                </ol>
+            </nav>
+            <h1>
+                {% if document.is_favorite %}
+                <i class="fas fa-star text-warning"></i>
+                {% endif %}
+                {{ document.title }}
+            </h1>
+            {% if document.description %}
+            <p class="text-muted">{{ document.description }}</p>
+            {% endif %}
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group" role="group">
+                <a href="{% url 'documents:document_download' document.id %}" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Download
+                </a>
+                <a href="{% url 'documents:document_edit' document.id %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <a href="{% url 'documents:document_delete' document.id %}" class="btn btn-outline-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Main Info -->
+        <div class="col-lg-8">
+            <!-- Preview Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-eye"></i> Preview</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if document.file_type in 'png,jpg,jpeg,gif' %}
+                    <!-- Image Preview -->
+                    <img src="{{ document.file.url }}" alt="{{ document.title }}" class="img-fluid" style="max-height: 500px;">
+                    {% elif document.file_type == 'pdf' %}
+                    <!-- PDF Preview -->
+                    <iframe src="{{ document.file.url }}" width="100%" height="600px" style="border: 1px solid #ddd;">
+                        Your browser does not support PDF preview.
+                    </iframe>
+                    {% elif document.file_type == 'txt' %}
+                    <!-- Text Preview -->
+                    <div class="text-start bg-light p-3" style="max-height: 500px; overflow-y: auto;">
+                        <pre>{{ document.file.read|truncatewords:500 }}</pre>
+                    </div>
+                    {% else %}
+                    <!-- Generic File Icon -->
+                    <div class="py-5">
+                        <i class="fas fa-file-{{ document.file_type }} fa-5x text-muted mb-3"></i>
+                        <p class="text-muted">Preview not available for this file type</p>
+                        <a href="{% url 'documents:document_download' document.id %}" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Download to View
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- File Metadata -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> File Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Original Name:</dt>
+                                <dd class="col-sm-7">{{ document.file_original_name }}</dd>
+
+                                <dt class="col-sm-5">File Type:</dt>
+                                <dd class="col-sm-7">
+                                    <span class="badge bg-secondary">{{ document.get_file_type_display }}</span>
+                                </dd>
+
+                                <dt class="col-sm-5">Original Size:</dt>
+                                <dd class="col-sm-7">{{ document.original_file_size|filesizeformat }}</dd>
+
+                                <dt class="col-sm-5">Current Size:</dt>
+                                <dd class="col-sm-7">{{ document.file_size_display }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Uploaded:</dt>
+                                <dd class="col-sm-7">{{ document.upload_date|date:"M d, Y H:i" }}</dd>
+
+                                <dt class="col-sm-5">Last Modified:</dt>
+                                <dd class="col-sm-7">{{ document.last_modified|naturaltime }}</dd>
+
+                                <dt class="col-sm-5">Last Accessed:</dt>
+                                <dd class="col-sm-7">
+                                    {% if document.last_accessed %}
+                                    {{ document.last_accessed|naturaltime }}
+                                    {% else %}
+                                    <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </dd>
+
+                                <dt class="col-sm-5">Downloads:</dt>
+                                <dd class="col-sm-7">{{ document.download_count }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compression Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-compress"></i> Compression Details</h5>
+                </div>
+                <div class="card-body">
+                    {% if document.is_compressed %}
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-success">{{ document.compression_ratio_percentage }}%</h3>
+                            <small class="text-muted">Compression Ratio</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-success">{{ document.compression_savings|filesizeformat }}</h3>
+                            <small class="text-muted">Space Saved</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3>{{ document.compression_algorithm|upper }}</h3>
+                            <small class="text-muted">Algorithm</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3>
+                                {% if document.compression_timestamp %}
+                                {{ document.compression_timestamp|timesince }}
+                                {% endif %}
+                            </h3>
+                            <small class="text-muted">Compressed</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p class="mb-1"><strong>Status:</strong>
+                                <span class="badge bg-success">{{ document.get_compression_status_display }}</span>
+                            </p>
+                            <p class="mb-1"><strong>Checksum (Original):</strong>
+                                <code class="small">{{ document.original_file_checksum }}</code>
+                            </p>
+                            <p class="mb-0"><strong>Checksum (Compressed):</strong>
+                                <code class="small">{{ document.compressed_file_checksum }}</code>
+                            </p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        {% if document.compression_status == 'pending' %}
+                        This document is queued for compression.
+                        {% elif document.compression_status == 'compressing' %}
+                        This document is currently being compressed...
+                        {% elif document.compression_status == 'failed' %}
+                        Compression failed for this document.
+                        {% else %}
+                        This document is not compressed.
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Share History -->
+            {% if share_logs %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-share-alt"></i> Share History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>Recipient</th>
+                                    <th>Shared</th>
+                                    <th>Status</th>
+                                    <th>Accesses</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in share_logs %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-{% if log.share_method == 'email' %}envelope{% elif log.share_method == 'whatsapp' %}whatsapp{% else %}link{% endif %}"></i>
+                                            {{ log.get_share_method_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.recipient }}</td>
+                                    <td>{{ log.shared_at|naturaltime }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if log.status == 'delivered' %}success{% elif log.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                                            {{ log.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.access_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Actions & Organization -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-warning"
+                                hx-post="{% url 'documents:toggle_favorite' document.id %}"
+                                hx-target="#favorite-status"
+                                hx-swap="outerHTML">
+                            <i class="fas fa-star"></i>
+                            {% if document.is_favorite %}Remove from{% else %}Add to{% endif %} Favorites
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <i class="fas fa-share-alt"></i> Share Document
+                        </button>
+                        <a href="{% url 'documents:document_preview' document.id %}" class="btn btn-outline-info">
+                            <i class="fas fa-eye"></i> Full Preview
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organization -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-tags"></i> Organization</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Category</h6>
+                    {% if document.category %}
+                    <span class="badge mb-3" style="background-color: {{ document.category.color }};">
+                        <i class="fas fa-{{ document.category.icon }}"></i>
+                        {{ document.category.name }}
+                    </span>
+                    {% else %}
+                    <p class="text-muted mb-3">No category assigned</p>
+                    {% endif %}
+
+                    <h6>Tags</h6>
+                    {% if document.tags.all %}
+                    <div class="mb-3">
+                        {% for tag in document.tags.all %}
+                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-3">No tags</p>
+                    {% endif %}
+
+                    <div id="favorite-status">
+                        <h6>Status</h6>
+                        <p>
+                            {% if document.is_favorite %}
+                            <i class="fas fa-star text-warning"></i> Favorite
+                            {% else %}
+                            <i class="far fa-star text-muted"></i> Not a favorite
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-6">Views:</dt>
+                        <dd class="col-6">{{ document.view_count }}</dd>
+
+                        <dt class="col-6">Downloads:</dt>
+                        <dd class="col-6">{{ document.download_count }}</dd>
+
+                        <dt class="col-6">Total Accesses:</dt>
+                        <dd class="col-6">{{ document.access_count }}</dd>
+
+                        <dt class="col-6">Shares:</dt>
+                        <dd class="col-6">{{ share_logs|length }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Sharing Status -->
+            {% if document.is_public %}
+            <div class="card border-primary mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-globe"></i> Public Sharing</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>This document is publicly shared</strong></p>
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" readonly
+                               value="{{ request.scheme }}://{{ request.get_host }}{% url 'documents:public_share' document.share_token %}"
+                               id="shareLink">
+                        <button class="btn btn-outline-secondary" type="button"
+                                onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    {% if document.share_expiry %}
+                    <p class="small text-muted mb-2">
+                        <i class="fas fa-clock"></i> Expires {{ document.share_expiry|naturaltime }}
+                    </p>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100"
+                            onclick="if(confirm('Revoke public access?')) { /* HTMX revoke */ }">
+                        <i class="fas fa-times"></i> Revoke Access
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Share Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#email-tab">
+                            <i class="fas fa-envelope"></i> Email
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#link-tab">
+                            <i class="fas fa-link"></i> Link
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#whatsapp-tab">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Email Tab -->
+                    <div class="tab-pane fade show active" id="email-tab">
+                        <form method="post" action="#">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Recipients (comma-separated)</label>
+                                <input type="text" class="form-control" name="recipients" placeholder="email1@example.com, email2@example.com">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Message (optional)</label>
+                                <textarea class="form-control" name="message" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Expires in</label>
+                                <select class="form-select" name="expiry_days">
+                                    <option value="1">1 day</option>
+                                    <option value="7" selected>7 days</option>
+                                    <option value="30">30 days</option>
+                                    <option value="365">1 year</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-envelope"></i> Send Email
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Link Tab -->
+                    <div class="tab-pane fade" id="link-tab">
+                        <p>Generate a public link that anyone can access:</p>
+                        <form method="post" action="#">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Expires in</label>
+                                <select class="form-select" name="expiry_days">
+                                    <option value="1">1 day</option>
+                                    <option value="7" selected>7 days</option>
+                                    <option value="30">30 days</option>
+                                    <option value="0">Never</option>
+                                </select>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="requirePassword">
+                                <label class="form-check-label" for="requirePassword">
+                                    Require password
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-link"></i> Generate Link
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- WhatsApp Tab -->
+                    <div class="tab-pane fade" id="whatsapp-tab">
+                        <form method="post" action="#">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" name="phone" placeholder="+1234567890">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Message (optional)</label>
+                                <textarea class="form-control" name="message" rows="3">Check out this document: {{ document.title }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fab fa-whatsapp"></i> Share on WhatsApp
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HTMX -->
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+{% endblock %}

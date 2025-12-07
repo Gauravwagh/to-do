@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Document Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Document Library</h1>
+            <p class="text-muted">Manage your documents with intelligent compression</p>
+        </div>
+    </div>
+
+    <!-- Storage Quota -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Storage Usage</h5>
+                    <div class="progress mb-2" style="height: 30px;">
+                        <div class="progress-bar" role="progressbar"
+                             style="width: {{ quota.original_used_percentage }}%"
+                             aria-valuenow="{{ quota.original_used_percentage }}"
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ quota.original_used_percentage }}%
+                        </div>
+                    </div>
+                    <p>
+                        <strong>{{ quota.original_used|filesizeformat }}</strong> of
+                        <strong>{{ quota.original_quota|filesizeformat }}</strong> used
+                        ({{ quota.original_available|filesizeformat }} available)
+                    </p>
+                    <p class="text-success">
+                        <i class="fas fa-compress"></i>
+                        Saved {{ quota.compression_savings|filesizeformat }} through compression
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Stats</h5>
+                    <p class="mb-1"><strong>{{ stats.total_documents }}</strong> documents</p>
+                    <p class="mb-1"><strong>{{ stats.compressed_count }}</strong> compressed</p>
+                    <p class="mb-0">
+                        <strong>{{ stats.compression_savings|filesizeformat }}</strong> saved
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3>Categories</h3>
+            <div class="d-flex flex-wrap gap-2">
+                {% for category in categories %}
+                <a href="{% url 'documents:document_list' %}?category={{ category.id }}"
+                   class="btn btn-outline-primary">
+                    <i class="fas fa-folder"></i> {{ category.name }} ({{ category.doc_count }})
+                </a>
+                {% empty %}
+                <p class="text-muted">No categories yet. <a href="{% url 'documents:category_list' %}">Create one</a></p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Documents -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Recent Documents</h3>
+                <div>
+                    <a href="{% url 'documents:document_upload' %}" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload Document
+                    </a>
+                    <a href="{% url 'documents:document_list' %}" class="btn btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                            <th>Compressed</th>
+                            <th>Uploaded</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in documents %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'documents:document_detail' document.id %}">
+                                    {% if document.is_favorite %}<i class="fas fa-star text-warning"></i>{% endif %}
+                                    {{ document.title }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ document.get_file_type_display }}</span></td>
+                            <td>{{ document.file_size_display }}</td>
+                            <td>
+                                {% if document.is_compressed %}
+                                <span class="badge bg-success">
+                                    {{ document.compression_ratio_percentage }}% ratio
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ document.upload_date|naturaltime }}</td>
+                            <td>
+                                <a href="{% url 'documents:document_download' document.id %}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <a href="{% url 'documents:document_detail' document.id %}"
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                No documents yet. <a href="{% url 'documents:document_upload' %}">Upload your first document</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

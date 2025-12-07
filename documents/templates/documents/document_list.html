@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}All Documents{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1>All Documents</h1>
+            <p class="text-muted">{{ page_obj.paginator.count }} documents found</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{% url 'documents:document_upload' %}" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Upload Document
+            </a>
+            <a href="{% url 'documents:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <!-- Search -->
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search"
+                                   placeholder="Search by title or filename"
+                                   value="{{ search_query|default:'' }}">
+                        </div>
+
+                        <!-- Category Filter -->
+                        <div class="col-md-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- File Type Filter -->
+                        <div class="col-md-3">
+                            <label for="file_type" class="form-label">File Type</label>
+                            <select class="form-select" id="file_type" name="file_type">
+                                <option value="">All Types</option>
+                                <option value="pdf" {% if current_file_type == "pdf" %}selected{% endif %}>PDF</option>
+                                <option value="docx" {% if current_file_type == "docx" %}selected{% endif %}>Word</option>
+                                <option value="xlsx" {% if current_file_type == "xlsx" %}selected{% endif %}>Excel</option>
+                                <option value="pptx" {% if current_file_type == "pptx" %}selected{% endif %}>PowerPoint</option>
+                                <option value="txt" {% if current_file_type == "txt" %}selected{% endif %}>Text</option>
+                                <option value="csv" {% if current_file_type == "csv" %}selected{% endif %}>CSV</option>
+                                <option value="png" {% if current_file_type == "png" %}selected{% endif %}>PNG</option>
+                                <option value="jpg" {% if current_file_type == "jpg" %}selected{% endif %}>JPG</option>
+                                <option value="zip" {% if current_file_type == "zip" %}selected{% endif %}>ZIP</option>
+                            </select>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <a href="{% url 'documents:document_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Filters -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="btn-group" role="group">
+                <a href="?is_favorite=true" class="btn btn-outline-primary {% if request.GET.is_favorite == 'true' %}active{% endif %}">
+                    <i class="fas fa-star"></i> Favorites
+                </a>
+                <a href="?order_by=-upload_date" class="btn btn-outline-primary">
+                    <i class="fas fa-clock"></i> Recent
+                </a>
+                <a href="?order_by=title" class="btn btn-outline-primary">
+                    <i class="fas fa-sort-alpha-down"></i> A-Z
+                </a>
+                <a href="?order_by=-original_file_size" class="btn btn-outline-primary">
+                    <i class="fas fa-sort-amount-down"></i> Largest
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th width="40%">Document</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Size</th>
+                                    <th>Compression</th>
+                                    <th>Uploaded</th>
+                                    <th width="15%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for document in page_obj %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if document.is_favorite %}
+                                            <i class="fas fa-star text-warning me-2"></i>
+                                            {% endif %}
+                                            <div>
+                                                <a href="{% url 'documents:document_detail' document.id %}" class="fw-bold">
+                                                    {{ document.title }}
+                                                </a>
+                                                <br>
+                                                <small class="text-muted">{{ document.file_original_name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-file-{{ document.file_type }}"></i>
+                                            {{ document.get_file_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if document.category %}
+                                        <span class="badge" style="background-color: {{ document.category.color }};">
+                                            <i class="fas fa-{{ document.category.icon }}"></i>
+                                            {{ document.category.name }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">Uncategorized</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ document.file_size_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if document.is_compressed %}
+                                        <span class="badge bg-success" title="Compressed with {{ document.compression_algorithm }}">
+                                            <i class="fas fa-compress"></i> {{ document.compression_ratio_percentage }}%
+                                        </span>
+                                        <br>
+                                        <small class="text-success">
+                                            Saved {{ document.compression_savings|filesizeformat }}
+                                        </small>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            {% if document.compression_status == 'pending' %}
+                                            <i class="fas fa-clock"></i> Pending
+                                            {% elif document.compression_status == 'compressing' %}
+                                            <i class="fas fa-spinner fa-spin"></i> Compressing
+                                            {% else %}
+                                            Not compressed
+                                            {% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ document.upload_date|naturaltime }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'documents:document_download' document.id %}"
+                                               class="btn btn-outline-primary" title="Download">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <a href="{% url 'documents:document_detail' document.id %}"
+                                               class="btn btn-outline-info" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'documents:document_edit' document.id %}"
+                                               class="btn btn-outline-secondary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">No documents found</p>
+                                        <a href="{% url 'documents:document_upload' %}" class="btn btn-primary">
+                                            <i class="fas fa-upload"></i> Upload Your First Document
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Document pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_file_type %}&file_type={{ current_file_type }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_file_type %}&file_type={{ current_file_type }}{% endif %}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_file_type %}&file_type={{ current_file_type }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_file_type %}&file_type={{ current_file_type }}{% endif %}">Last</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

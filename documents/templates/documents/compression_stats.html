@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Compression Statistics{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-chart-bar"></i> Compression Statistics</h1>
+            <p class="text-muted">Detailed compression analytics and algorithm performance</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'documents:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Overall Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Total Documents</h6>
+                    <h2 class="text-primary">{{ stats.total_documents }}</h2>
+                    <p class="mb-0 small text-muted">All files</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Compressed</h6>
+                    <h2 class="text-success">{{ stats.compressed_count }}</h2>
+                    <p class="mb-0 small text-muted">{{ stats.compressed_percentage|floatformat:1 }}% of total</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Avg Compression</h6>
+                    <h2 class="text-warning">{{ stats.average_ratio|floatformat:1 }}%</h2>
+                    <p class="mb-0 small text-muted">Space saved</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Total Savings</h6>
+                    <h2 class="text-info">{{ stats.total_savings|filesizeformat }}</h2>
+                    <p class="mb-0 small text-muted">Disk space</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compression by Algorithm -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Performance by Algorithm</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Algorithm</th>
+                                    <th class="text-end">Count</th>
+                                    <th class="text-end">Avg Ratio</th>
+                                    <th class="text-end">Total Saved</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for algo in stats.by_algorithm %}
+                                <tr>
+                                    <td>
+                                        <span class="badge {% if algo.algorithm == 'zstd' %}bg-success{% elif algo.algorithm == 'brotli' %}bg-info{% else %}bg-secondary{% endif %}">
+                                            {{ algo.algorithm|upper }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">{{ algo.count }}</td>
+                                    <td class="text-end">
+                                        <strong>{{ algo.avg_ratio|floatformat:1 }}%</strong>
+                                    </td>
+                                    <td class="text-end">{{ algo.total_saved|filesizeformat }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No compression data yet</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compression by File Type -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Performance by File Type</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th class="text-end">Count</th>
+                                    <th class="text-end">Avg Ratio</th>
+                                    <th class="text-end">Total Saved</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for type in stats.by_file_type %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ type.file_type|upper }}</span>
+                                    </td>
+                                    <td class="text-end">{{ type.count }}</td>
+                                    <td class="text-end">
+                                        <strong class="{% if type.avg_ratio > 50 %}text-success{% elif type.avg_ratio > 30 %}text-warning{% else %}text-muted{% endif %}">
+                                            {{ type.avg_ratio|floatformat:1 }}%
+                                        </strong>
+                                    </td>
+                                    <td class="text-end">{{ type.total_saved|filesizeformat }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compression Timeline -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Compression Activities</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Document</th>
+                                    <th>Type</th>
+                                    <th>Algorithm</th>
+                                    <th class="text-end">Original Size</th>
+                                    <th class="text-end">Compressed</th>
+                                    <th class="text-end">Ratio</th>
+                                    <th>Compressed At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in recent_compressions %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'documents:document_detail' doc.id %}">
+                                            {{ doc.title|truncatechars:40 }}
+                                        </a>
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ doc.file_type|upper }}</span></td>
+                                    <td>
+                                        <span class="badge {% if doc.compression_algorithm == 'zstd' %}bg-success{% elif doc.compression_algorithm == 'brotli' %}bg-info{% else %}bg-secondary{% endif %}">
+                                            {{ doc.compression_algorithm|upper }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">{{ doc.original_file_size|filesizeformat }}</td>
+                                    <td class="text-end">{{ doc.compressed_file_size|filesizeformat }}</td>
+                                    <td class="text-end">
+                                        <strong class="{% if doc.compression_ratio > 50 %}text-success{% elif doc.compression_ratio > 30 %}text-warning{% else %}text-muted{% endif %}">
+                                            {{ doc.compression_ratio|floatformat:0 }}%
+                                        </strong>
+                                    </td>
+                                    <td>{{ doc.compressed_at|naturaltime }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">No recent compressions</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compression Recommendations -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Optimization Tips</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Best Compression Results:</h6>
+                    <ul class="mb-3">
+                        <li><strong>Text files (TXT, CSV):</strong> Brotli achieves 70-90% compression</li>
+                        <li><strong>Office documents (DOCX, XLSX):</strong> Zstandard gives 60-70% compression</li>
+                        <li><strong>PDFs:</strong> Zstandard typically saves 30-50% space</li>
+                    </ul>
+
+                    <h6>Files to Skip:</h6>
+                    <ul class="mb-0">
+                        <li>Images (PNG, JPG) - already compressed</li>
+                        <li>ZIP archives - no benefit</li>
+                        <li>Video files - already optimized</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Bulk Actions</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Optimize your storage with bulk compression operations:</p>
+
+                    <div class="d-grid gap-2">
+                        <form method="post" action="/api/v1/documents/storage/bulk-compress/">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-success w-100 mb-2">
+                                <i class="fas fa-compress-arrows-alt"></i> Compress All Uncompressed Documents
+                            </button>
+                        </form>
+
+                        <form method="post" action="/api/v1/documents/storage/recompress/">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-sync"></i> Recompress with Better Algorithm
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="alert alert-info mt-3 mb-0">
+                        <small>
+                            <i class="fas fa-info-circle"></i>
+                            Bulk operations run in the background. Check your email for completion notification.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

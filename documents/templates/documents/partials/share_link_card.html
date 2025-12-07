@@ -1,0 +1,111 @@
+{% load humanize %}
+
+<div class="card border-success" id="share-link-{{ share.id }}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <h6 class="mb-0">
+                    <i class="fas fa-link text-success"></i>
+                    Share Link
+                </h6>
+                <small class="text-muted">Created {{ share.created_at|naturaltime }}</small>
+            </div>
+            <button type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    hx-delete="{% url 'documents:revoke_share_link' share.id %}"
+                    hx-confirm="Are you sure you want to revoke this share link?"
+                    hx-target="#share-link-{{ share.id }}"
+                    hx-swap="outerHTML">
+                <i class="fas fa-times"></i> Revoke
+            </button>
+        </div>
+
+        <!-- Share URL -->
+        <div class="input-group mb-2">
+            <input type="text"
+                   class="form-control form-control-sm"
+                   id="share-url-{{ share.id }}"
+                   value="{{ request.scheme }}://{{ request.get_host }}{% url 'documents:public_share' share.share_token %}"
+                   readonly>
+            <button class="btn btn-sm btn-outline-primary"
+                    type="button"
+                    onclick="copyShareLink('{{ share.id }}')">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+        </div>
+
+        <!-- Share Details -->
+        <div class="row g-2 small">
+            <div class="col-6">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-eye text-muted me-1"></i>
+                    <span>{{ share.access_count }} view(s)</span>
+                </div>
+            </div>
+            <div class="col-6">
+                {% if share.expires_at %}
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-clock text-warning me-1"></i>
+                    <span>Expires {{ share.expires_at|naturaltime }}</span>
+                </div>
+                {% else %}
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-infinity text-success me-1"></i>
+                    <span>Never expires</span>
+                </div>
+                {% endif %}
+            </div>
+            {% if share.is_password_protected %}
+            <div class="col-12">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-lock text-info me-1"></i>
+                    <span>Password protected</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Share Buttons -->
+        <div class="btn-group btn-group-sm w-100 mt-2">
+            <a href="mailto:?subject=Shared Document: {{ document.title }}&body=View the document here: {{ request.scheme }}://{{ request.get_host }}{% url 'documents:public_share' share.share_token %}"
+               class="btn btn-outline-secondary"
+               title="Share via Email">
+                <i class="fas fa-envelope"></i>
+            </a>
+            <a href="https://wa.me/?text=Check out this document: {{ request.scheme }}://{{ request.get_host }}{% url 'documents:public_share' share.share_token %}"
+               target="_blank"
+               class="btn btn-outline-success"
+               title="Share via WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+            </a>
+            <a href="https://twitter.com/intent/tweet?text={{ document.title }}&url={{ request.scheme }}://{{ request.get_host }}{% url 'documents:public_share' share.share_token %}"
+               target="_blank"
+               class="btn btn-outline-info"
+               title="Share on Twitter">
+                <i class="fab fa-twitter"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyShareLink(shareId) {
+    const input = document.getElementById('share-url-' + shareId);
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value);
+
+    // Show feedback
+    const btn = event.target.closest('button');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    btn.classList.add('btn-success');
+    btn.classList.remove('btn-outline-primary');
+
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-primary');
+    }, 2000);
+}
+</script>

@@ -1,0 +1,11 @@
+<button class="btn btn-sm {% if document.is_favorite %}btn-warning{% else %}btn-outline-warning{% endif %}"
+        hx-post="{% url 'documents:toggle_favorite' document.id %}"
+        hx-swap="outerHTML"
+        hx-target="this">
+    <i class="fas fa-star"></i>
+    {% if document.is_favorite %}
+        Favorited
+    {% else %}
+        Add to Favorites
+    {% endif %}
+</button>

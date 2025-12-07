@@ -10,7 +10,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('vault/', include('vault.urls')),
+    path('documents/', include('documents.urls')),
     path('api/', include('api.urls')),
+    path('api/v1/documents/', include('documents.api_urls')),
     path('', include('notes.urls')),
 ]
 

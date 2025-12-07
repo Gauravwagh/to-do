@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ document.title }} - Shared Document</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        .share-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .document-preview {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .preview-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px 8px 0 0;
+        }
+        .preview-content {
+            padding: 2rem;
+        }
+        .file-icon {
+            font-size: 4rem;
+            color: #667eea;
+        }
+        .watermark {
+            position: relative;
+        }
+        .watermark::after {
+            content: "SHARED COPY";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 3rem;
+            color: rgba(0,0,0,0.05);
+            font-weight: bold;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container share-container">
+        <!-- Password Protection -->
+        {% if share.is_password_protected and not password_verified %}
+        <div class="document-preview">
+            <div class="preview-header text-center">
+                <i class="fas fa-lock fa-3x mb-3"></i>
+                <h2>Password Protected Document</h2>
+                <p class="mb-0">This document requires a password to view</p>
+            </div>
+            <div class="preview-content">
+                <form method="post" action="{% url 'documents:verify_share_password' share.share_token %}">
+                    {% csrf_token %}
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            {% if error %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                            </div>
+                            {% endif %}
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label"><strong>Enter Password:</strong></label>
+                                <input type="password" class="form-control form-control-lg"
+                                       id="password" name="password" required autofocus>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-unlock"></i> Unlock Document
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Document Content -->
+        <div class="document-preview">
+            <div class="preview-header">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h1 class="mb-2">{{ document.title }}</h1>
+                        <p class="mb-0">
+                            <i class="fas fa-user"></i> Shared by {{ share.shared_by.get_full_name|default:share.shared_by.username }}
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-calendar"></i> {{ share.created_at|date:"F d, Y" }}
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-light text-dark">{{ document.get_file_type_display|upper }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-content">
+                <!-- Share Expiry Warning -->
+                {% if share.expires_at %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-clock"></i>
+                    <strong>Note:</strong> This link expires on {{ share.expires_at|date:"F d, Y \a\t g:i A" }}
+                </div>
+                {% endif %}
+
+                <!-- Document Description -->
+                {% if document.description %}
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> About this document:</h6>
+                    <p class="mb-0">{{ document.description }}</p>
+                </div>
+                {% endif %}
+
+                <!-- File Preview -->
+                <div class="watermark mb-4">
+                    {% if document.file_type in 'png,jpg,jpeg,gif' %}
+                    <!-- Image Preview -->
+                    <div class="text-center">
+                        <img src="{% url 'documents:public_share_download' share.share_token %}"
+                             alt="{{ document.title }}"
+                             class="img-fluid rounded shadow"
+                             style="max-height: 600px;">
+                    </div>
+
+                    {% elif document.file_type == 'pdf' %}
+                    <!-- PDF Preview -->
+                    <div class="ratio ratio-16x9">
+                        <iframe src="{% url 'documents:public_share_download' share.share_token %}#view=FitH"
+                                type="application/pdf"
+                                class="rounded shadow"></iframe>
+                    </div>
+
+                    {% elif document.file_type in 'txt,csv' %}
+                    <!-- Text Preview -->
+                    <div class="card">
+                        <div class="card-body bg-light">
+                            <pre class="mb-0" style="max-height: 500px; overflow-y: auto;">{{ text_content|default:"Text preview not available" }}</pre>
+                        </div>
+                    </div>
+
+                    {% else %}
+                    <!-- Generic File -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-file file-icon mb-3"></i>
+                        <h4>{{ document.file_original_name }}</h4>
+                        <p class="text-muted">{{ document.file_size_display }}</p>
+                        <p class="text-muted">Preview not available for this file type</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- File Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle"></i> File Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">File Name:</dt>
+                                    <dd class="col-sm-7">{{ document.file_original_name }}</dd>
+
+                                    <dt class="col-sm-5">File Type:</dt>
+                                    <dd class="col-sm-7">{{ document.get_file_type_display }}</dd>
+
+                                    <dt class="col-sm-5">File Size:</dt>
+                                    <dd class="col-sm-7">{{ document.file_size_display }}</dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">Uploaded:</dt>
+                                    <dd class="col-sm-7">{{ document.upload_date|date:"M d, Y" }}</dd>
+
+                                    <dt class="col-sm-5">Shared:</dt>
+                                    <dd class="col-sm-7">{{ share.created_at|date:"M d, Y" }}</dd>
+
+                                    <dt class="col-sm-5">Access Count:</dt>
+                                    <dd class="col-sm-7">{{ share.access_count }} view(s)</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download Button -->
+                <div class="text-center mt-4">
+                    <a href="{% url 'documents:public_share_download' share.share_token %}"
+                       class="btn btn-primary btn-lg">
+                        <i class="fas fa-download"></i> Download Document
+                    </a>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="alert alert-light mt-4">
+                    <h6><i class="fas fa-shield-alt"></i> Security & Privacy</h6>
+                    <ul class="mb-0 small">
+                        <li>This document was shared securely using end-to-end encryption</li>
+                        <li>Access to this document is logged for security purposes</li>
+                        <li>Do not share this link if the document contains sensitive information</li>
+                        {% if share.expires_at %}
+                        <li>This link will automatically expire and become inaccessible after {{ share.expires_at|date:"F d, Y" }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="text-center mt-4 text-white">
+            <p class="mb-0">
+                <i class="fas fa-lock"></i>
+                Powered by Personal Document Library
+            </p>
+            <small>Secure document sharing with compression and encryption</small>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Track view
+        fetch("{% url 'documents:track_share_view' share.share_token %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+{% load humanize %}
+
+<div class="card border-primary" id="storage-quota-widget">
+    <div class="card-body">
+        <h6 class="card-subtitle mb-2 text-muted">
+            <i class="fas fa-database"></i> Storage Usage
+        </h6>
+
+        <!-- Progress Bar -->
+        <div class="progress mb-2" style="height: 25px;">
+            <div class="progress-bar
+                {% if quota.original_used_percentage > 90 %}bg-danger
+                {% elif quota.original_used_percentage > 75 %}bg-warning
+                {% else %}bg-primary{% endif %}"
+                 role="progressbar"
+                 style="width: {{ quota.original_used_percentage }}%"
+                 aria-valuenow="{{ quota.original_used_percentage }}"
+                 aria-valuemin="0"
+                 aria-valuemax="100">
+                {{ quota.original_used_percentage }}%
+            </div>
+        </div>
+
+        <!-- Usage Details -->
+        <div class="d-flex justify-content-between small">
+            <span>
+                <strong>{{ quota.original_used|filesizeformat }}</strong> used
+            </span>
+            <span class="text-muted">
+                of {{ quota.original_quota|filesizeformat }}
+            </span>
+        </div>
+
+        <!-- Compression Savings -->
+        {% if quota.compression_savings > 0 %}
+        <div class="mt-2 pt-2 border-top">
+            <div class="d-flex justify-content-between align-items-center small">
+                <span class="text-success">
+                    <i class="fas fa-compress"></i> Saved:
+                </span>
+                <strong class="text-success">{{ quota.compression_savings|filesizeformat }}</strong>
+            </div>
+            <div class="progress mt-1" style="height: 15px;">
+                <div class="progress-bar bg-success"
+                     role="progressbar"
+                     style="width: {% widthratio quota.compressed_used quota.original_quota 100 %}%">
+                </div>
+            </div>
+            <div class="text-center mt-1">
+                <small class="text-muted">
+                    Actual disk: {{ quota.compressed_used|filesizeformat }}
+                </small>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Warning if near limit -->
+        {% if quota.original_used_percentage > 90 %}
+        <div class="alert alert-danger mt-2 mb-0 py-1 px-2">
+            <small>
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Almost full!</strong> Clean up or upgrade.
+            </small>
+        </div>
+        {% elif quota.original_used_percentage > 75 %}
+        <div class="alert alert-warning mt-2 mb-0 py-1 px-2">
+            <small>
+                <i class="fas fa-info-circle"></i>
+                Storage is {{ quota.original_used_percentage }}% full
+            </small>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Auto-refresh every 30 seconds -->
+    <div hx-get="{% url 'documents:storage_quota_widget' %}"
+         hx-trigger="every 30s"
+         hx-swap="outerHTML"
+         hx-target="#storage-quota-widget"></div>
+</div>

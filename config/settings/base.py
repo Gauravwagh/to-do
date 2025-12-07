@@ -46,6 +46,7 @@ LOCAL_APPS = [
     'core.apps.CoreConfig',
     'vault.apps.VaultConfig',
     'api.apps.ApiConfig',
+    'documents.apps.DocumentsConfig',
 ]
 
 INSTALLED_APPS = ADMIN_THEME_APPS + DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -148,6 +149,8 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@evernote-clone.com')
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 # TinyMCE settings
 TINYMCE_API_KEY = '70r2h4ki9m7s4vx8qw2lv8w1cz4izt726m4trl79l5i6bbks'
@@ -372,5 +375,50 @@ SPECTACULAR_SETTINGS = {
         'name': 'MIT License',
     },
 }
+
+# ==============================================================================
+# CELERY SETTINGS
+# ==============================================================================
+
+# Celery broker and result backend
+CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
+
+# Celery configuration
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Task settings
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes
+
+# Result backend settings
+CELERY_RESULT_EXPIRES = 3600  # 1 hour
+
+# ==============================================================================
+# DOCUMENT LIBRARY COMPRESSION SETTINGS
+# ==============================================================================
+
+# Compression settings
+COMPRESSION_ENABLED = True
+COMPRESSION_ALGORITHM = 'zstd'  # zstd, deflate, brotli
+COMPRESSION_LEVEL = 6  # 1-9
+COMPRESSION_MIN_SIZE = 102400  # 100KB
+COMPRESSION_MAX_SIZE = 5368709120  # 5GB
+COMPRESSION_TIMEOUT = 300  # seconds
+COMPRESSION_THREADS = 4  # CPU threads for compression
+
+# Decompression settings
+DECOMPRESSION_TIMEOUT = 30  # seconds
+DECOMPRESSION_TEMP_TTL = 3600  # 1 hour
+DECOMPRESSION_TEMP_DIR = BASE_DIR / 'media' / 'temp' / 'decompress'
+
+# Backup settings
+BACKUP_ENABLED = True
+BACKUP_KEEP_DAYS = 2  # Keep original for 2 days
 
 

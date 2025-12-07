@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.title }} - Preview{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h2><i class="fas fa-eye"></i> {{ document.title }}</h2>
+            <p class="text-muted mb-0">{{ document.file_original_name }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group">
+                <a href="{% url 'documents:document_download' document.id %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-download"></i> Download
+                </a>
+                <a href="{% url 'documents:document_detail' document.id %}"
+                   class="btn btn-outline-secondary">
+                    <i class="fas fa-info-circle"></i> Details
+                </a>
+                <a href="{% url 'documents:document_list' %}"
+                   class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Area -->
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="card shadow-lg" style="min-height: 80vh;">
+                <div class="card-body p-0">
+                    {% if document.file_type in 'png,jpg,jpeg,gif' %}
+                    <!-- Image Preview -->
+                    <div class="text-center p-4" style="background: #f8f9fa;">
+                        <img src="{% url 'documents:document_download' document.id %}"
+                             alt="{{ document.title }}"
+                             class="img-fluid rounded shadow"
+                             style="max-height: 85vh; max-width: 100%;">
+                    </div>
+
+                    {% elif document.file_type == 'pdf' %}
+                    <!-- PDF Preview -->
+                    <div class="ratio ratio-16x9" style="height: 85vh;">
+                        <iframe src="{% url 'documents:document_download' document.id %}#view=FitH"
+                                type="application/pdf"
+                                class="w-100 h-100"></iframe>
+                    </div>
+
+                    {% elif document.file_type in 'txt,csv,md' %}
+                    <!-- Text File Preview -->
+                    <div class="p-4">
+                        <div class="card bg-dark text-light">
+                            <div class="card-body">
+                                <pre class="mb-0" style="max-height: 75vh; overflow-y: auto; font-family: 'Courier New', monospace;">{{ file_content }}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% elif document.file_type == 'docx' %}
+                    <!-- Word Document Preview -->
+                    <div class="p-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Word document preview. For full formatting, please download the file.
+                        </div>
+                        <div class="card">
+                            <div class="card-body bg-light">
+                                <div style="max-height: 70vh; overflow-y: auto;">
+                                    {{ file_content|safe }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% elif document.file_type in 'xlsx,xls' %}
+                    <!-- Excel Preview -->
+                    <div class="p-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Excel spreadsheet preview. Download for full functionality.
+                        </div>
+                        <div class="table-responsive" style="max-height: 70vh;">
+                            <table class="table table-bordered table-sm">
+                                {{ file_content|safe }}
+                            </table>
+                        </div>
+                    </div>
+
+                    {% else %}
+                    <!-- Unsupported Format -->
+                    <div class="d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+                        <div class="text-center">
+                            <i class="fas fa-file fa-5x text-muted mb-4"></i>
+                            <h3>Preview Not Available</h3>
+                            <p class="text-muted mb-4">
+                                Preview is not supported for {{ document.get_file_type_display }} files
+                            </p>
+                            <a href="{% url 'documents:document_download' document.id %}"
+                               class="btn btn-primary btn-lg">
+                                <i class="fas fa-download"></i> Download to View
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar with Info -->
+        <div class="col-lg-3">
+            <!-- File Information -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> File Info</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="mb-0 small">
+                        <dt>Type:</dt>
+                        <dd>{{ document.get_file_type_display }}</dd>
+
+                        <dt>Size:</dt>
+                        <dd>{{ document.file_size_display }}</dd>
+
+                        <dt>Uploaded:</dt>
+                        <dd>{{ document.upload_date|date:"M d, Y" }}</dd>
+
+                        {% if document.category %}
+                        <dt>Category:</dt>
+                        <dd>
+                            <span class="badge" style="background-color: {{ document.category.color }};">
+                                {{ document.category.name }}
+                            </span>
+                        </dd>
+                        {% endif %}
+
+                        {% if document.tags.all %}
+                        <dt>Tags:</dt>
+                        <dd>
+                            {% for tag in document.tags.all %}
+                            <span class="badge bg-secondary">{{ tag.name }}</span>
+                            {% endfor %}
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Compression Info -->
+            {% if document.is_compressed %}
+            <div class="card mb-3 border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-compress"></i> Compression</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-2">
+                        <h3 class="text-success mb-0">{{ document.compression_ratio_percentage }}%</h3>
+                        <small class="text-muted">Space Saved</small>
+                    </div>
+                    <hr>
+                    <dl class="mb-0 small">
+                        <dt>Algorithm:</dt>
+                        <dd><span class="badge bg-success">{{ document.compression_algorithm|upper }}</span></dd>
+
+                        <dt>Original:</dt>
+                        <dd>{{ document.original_file_size|filesizeformat }}</dd>
+
+                        <dt>Compressed:</dt>
+                        <dd>{{ document.compressed_file_size|filesizeformat }}</dd>
+
+                        <dt>Saved:</dt>
+                        <dd class="text-success">
+                            <i class="fas fa-arrow-down"></i>
+                            {{ document.compression_savings|filesizeformat }}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-sm btn-outline-warning"
+                                hx-post="{% url 'documents:toggle_favorite' document.id %}"
+                                hx-swap="outerHTML"
+                                hx-target="this">
+                            <i class="fas fa-star"></i>
+                            {% if document.is_favorite %}Remove from{% else %}Add to{% endif %} Favorites
+                        </button>
+
+                        <a href="{% url 'documents:document_edit' document.id %}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i> Edit Metadata
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-sm btn-outline-info"
+                                data-bs-toggle="modal"
+                                data-bs-target="#shareModal">
+                            <i class="fas fa-share-alt"></i> Share Document
+                        </button>
+
+                        <a href="{% url 'documents:document_delete' document.id %}"
+                           class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal (reuse from document_detail.html) -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">
+                    <i class="fas fa-share-alt"></i> Share Document
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Generate a secure link to share this document</p>
+                <form method="post" action="{% url 'documents:generate_share_link' document.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Expiration (optional)</label>
+                        <select class="form-select" name="expires_in_days">
+                            <option value="">No expiration</option>
+                            <option value="1">1 day</option>
+                            <option value="7" selected>7 days</option>
+                            <option value="30">30 days</option>
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-link"></i> Generate Link
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HTMX -->
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+{% endblock %}

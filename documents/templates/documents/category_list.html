@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Categories{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-folder"></i> Document Categories</h1>
+            <p class="text-muted">Organize your documents with categories</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'documents:category_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Category
+            </a>
+            <a href="{% url 'documents:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Categories Grid -->
+    <div class="row">
+        {% for category in categories %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-folder" style="color: {{ category.color }};"></i>
+                            {{ category.name }}
+                        </h5>
+                        <span class="badge bg-primary rounded-pill">{{ category.document_count }}</span>
+                    </div>
+
+                    {% if category.description %}
+                    <p class="card-text text-muted small">{{ category.description }}</p>
+                    {% else %}
+                    <p class="card-text text-muted small fst-italic">No description</p>
+                    {% endif %}
+
+                    <div class="mt-3 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                Created {{ category.created_at|date:"M d, Y" }}
+                            </small>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'documents:document_list' %}?category={{ category.id }}"
+                                   class="btn btn-outline-primary" title="View documents">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'documents:category_edit' category.id %}"
+                                   class="btn btn-outline-secondary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'documents:category_delete' category.id %}"
+                                   class="btn btn-outline-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                    <h4>No Categories Yet</h4>
+                    <p class="text-muted">Create your first category to organize your documents</p>
+                    <a href="{% url 'documents:category_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Category
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Category Statistics -->
+    {% if categories %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Category Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-end">Documents</th>
+                                    <th class="text-end">Total Size</th>
+                                    <th class="text-end">Compressed</th>
+                                    <th class="text-end">Space Saved</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category in categories %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-folder" style="color: {{ category.color }};"></i>
+                                        <strong>{{ category.name }}</strong>
+                                    </td>
+                                    <td class="text-end">{{ category.document_count }}</td>
+                                    <td class="text-end">{{ category.total_size|filesizeformat }}</td>
+                                    <td class="text-end">{{ category.compressed_count }}</td>
+                                    <td class="text-end">
+                                        {% if category.space_saved > 0 %}
+                                        <span class="text-success">
+                                            <i class="fas fa-arrow-down"></i>
+                                            {{ category.space_saved|filesizeformat }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ category.updated_at|naturaltime }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

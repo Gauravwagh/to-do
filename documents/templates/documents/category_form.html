@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{% if category %}Edit{% else %}Create{% endif %} Category{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-folder"></i>
+                        {% if category %}Edit Category{% else %}Create New Category{% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label"><strong>Category Name</strong> <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                   value="{% if category %}{{ category.name }}{% endif %}"
+                                   required maxlength="100" placeholder="e.g., Work Documents, Personal, Invoices">
+                            <div class="form-text">Choose a descriptive name for this category</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label"><strong>Description</strong> (optional)</label>
+                            <textarea class="form-control" id="description" name="description"
+                                      rows="3" maxlength="500"
+                                      placeholder="Add a brief description of what this category contains">{% if category %}{{ category.description }}{% endif %}</textarea>
+                            <div class="form-text">Help yourself remember what documents belong here</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="color" class="form-label"><strong>Color</strong></label>
+                            <div class="row g-2">
+                                <div class="col-auto">
+                                    <input type="color" class="form-control form-control-color"
+                                           id="color" name="color"
+                                           value="{% if category %}{{ category.color }}{% else %}#007bff{% endif %}"
+                                           title="Choose category color">
+                                </div>
+                                <div class="col">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                onclick="setColor('#007bff')" style="background-color: #007bff; width: 40px;"></button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                onclick="setColor('#28a745')" style="background-color: #28a745; width: 40px;"></button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                onclick="setColor('#dc3545')" style="background-color: #dc3545; width: 40px;"></button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                onclick="setColor('#ffc107')" style="background-color: #ffc107; width: 40px;"></button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                onclick="setColor('#17a2b8')" style="background-color: #17a2b8; width: 40px;"></button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                onclick="setColor('#6f42c1')" style="background-color: #6f42c1; width: 40px;"></button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                onclick="setColor('#fd7e14')" style="background-color: #fd7e14; width: 40px;"></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text">Pick a color to help visually identify this category</div>
+                        </div>
+
+                        <!-- Preview -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h6 class="mb-3">Preview:</h6>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-folder fa-2x me-3" id="preview-icon" style="color: {% if category %}{{ category.color }}{% else %}#007bff{% endif %};"></i>
+                                    <div>
+                                        <h5 class="mb-0" id="preview-name">
+                                            {% if category %}{{ category.name }}{% else %}Category Name{% endif %}
+                                        </h5>
+                                        <small class="text-muted" id="preview-desc">
+                                            {% if category and category.description %}{{ category.description }}{% else %}Category description appears here{% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if category %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> This category contains {{ category.document_count }} document(s).
+                            Changing the category won't affect the documents.
+                        </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'documents:category_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {% if category %}Update{% else %}Create{% endif %} Category
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Be Specific:</strong> Use clear names like "Tax Documents 2024" instead of just "Taxes"</li>
+                        <li><strong>Color Code:</strong> Use similar colors for related categories (e.g., blue shades for work-related)</li>
+                        <li><strong>Keep It Simple:</strong> Don't create too many categories - 5-10 is usually enough</li>
+                        <li><strong>Use Descriptions:</strong> Add notes about what belongs in each category for future reference</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Live preview updates
+document.getElementById('name').addEventListener('input', function(e) {
+    document.getElementById('preview-name').textContent = e.target.value || 'Category Name';
+});
+
+document.getElementById('description').addEventListener('input', function(e) {
+    document.getElementById('preview-desc').textContent = e.target.value || 'Category description appears here';
+});
+
+document.getElementById('color').addEventListener('input', function(e) {
+    document.getElementById('preview-icon').style.color = e.target.value;
+});
+
+// Color preset buttons
+function setColor(color) {
+    document.getElementById('color').value = color;
+    document.getElementById('preview-icon').style.color = color;
+}
+</script>
+{% endblock %}
