@@ -40,4 +40,4 @@ class UserAdmin(BaseUserAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related('groups', 'user_permissions')
+        return qs.prefetch_related('groups', 'user_permissions')

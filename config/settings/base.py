@@ -13,8 +13,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-in-producti
 # Application definition
 # Admin theme apps (must be before django.contrib.admin)
 ADMIN_THEME_APPS = [
-    'admin_interface',
-    'colorfield',
+    'jazzmin',
 ]
 
 DJANGO_APPS = [
@@ -417,5 +416,141 @@ DECOMPRESSION_TEMP_DIR = BASE_DIR / 'media' / 'temp' / 'decompress'
 # Backup settings
 BACKUP_ENABLED = True
 BACKUP_KEEP_DAYS = 2  # Keep original for 2 days
+
+# ==============================================================================
+# JAZZMIN ADMIN THEME SETTINGS
+# ==============================================================================
+
+JAZZMIN_SETTINGS = {
+    # Site branding
+    'site_title': 'Evernote Clone Admin',
+    'site_header': 'Evernote Clone',
+    'site_brand': 'Evernote Clone',
+    'site_logo': None,
+    'login_logo': None,
+    'login_logo_dark': None,
+    'site_logo_classes': 'img-circle',
+    'site_icon': None,
+
+    # Welcome message
+    'welcome_sign': 'Welcome to Evernote Clone Admin',
+    'copyright': 'Evernote Clone',
+
+    # Search model
+    'search_model': ['auth.User', 'notes.Note', 'documents.Document'],
+
+    # User menu
+    'user_avatar': None,
+
+    # Top menu
+    'topmenu_links': [
+        {'name': 'Home', 'url': 'admin:index', 'permissions': ['auth.view_user']},
+        {'name': 'Dashboard', 'url': 'notes:dashboard', 'permissions': ['auth.view_user']},
+        {'name': 'Documents', 'url': 'documents:document_list', 'permissions': ['auth.view_user']},
+        {'model': 'auth.User'},
+    ],
+
+    # User menu items (dropdown)
+    'usermenu_links': [
+        {'name': 'Dashboard', 'url': 'notes:dashboard', 'icon': 'fas fa-home'},
+        {'model': 'auth.user'},
+    ],
+
+    # Side menu ordering
+    'show_sidebar': True,
+    'navigation_expanded': True,
+    'hide_apps': [],
+    'hide_models': [],
+
+    # Custom ordering for apps and models
+    'order_with_respect_to': [
+        'accounts',
+        'notes',
+        'documents',
+        'vault',
+        'auth',
+        'api',
+    ],
+
+    # Icons for apps and models
+    'icons': {
+        'auth': 'fas fa-users-cog',
+        'auth.user': 'fas fa-user',
+        'auth.Group': 'fas fa-users',
+
+        'accounts.User': 'fas fa-user-circle',
+
+        'notes.Note': 'fas fa-sticky-note',
+        'notes.Notebook': 'fas fa-book',
+        'notes.Tag': 'fas fa-tag',
+        'notes.Todo': 'fas fa-check-square',
+
+        'documents.Document': 'fas fa-file-alt',
+        'documents.Category': 'fas fa-folder',
+        'documents.Tag': 'fas fa-tags',
+        'documents.ShareLink': 'fas fa-share-alt',
+        'documents.ShareLog': 'fas fa-history',
+        'documents.DocumentQuota': 'fas fa-chart-pie',
+        'documents.DocumentBackup': 'fas fa-archive',
+        'documents.CompressionStats': 'fas fa-chart-bar',
+
+        'vault.VaultConfig': 'fas fa-lock',
+        'vault.VaultItem': 'fas fa-key',
+        'vault.VaultFile': 'fas fa-file-shield',
+    },
+
+    # Theme customization
+    'default_icon_parents': 'fas fa-chevron-circle-right',
+    'default_icon_children': 'fas fa-circle',
+
+    # UI Tweaks
+    'related_modal_active': False,
+    'custom_css': None,
+    'custom_js': None,
+    'use_google_fonts_cdn': True,
+    'show_ui_builder': False,
+
+    # Change view
+    'changeform_format': 'horizontal_tabs',
+    'changeform_format_overrides': {
+        'auth.user': 'collapsible',
+        'auth.group': 'vertical_tabs',
+    },
+
+    # Language chooser
+    'language_chooser': False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    'navbar_small_text': False,
+    'footer_small_text': False,
+    'body_small_text': False,
+    'brand_small_text': False,
+    'brand_colour': False,
+    'accent': 'accent-primary',
+    'navbar': 'navbar-white navbar-light',
+    'no_navbar_border': False,
+    'navbar_fixed': False,
+    'layout_boxed': False,
+    'footer_fixed': False,
+    'sidebar_fixed': False,
+    'sidebar': 'sidebar-dark-primary',
+    'sidebar_nav_small_text': False,
+    'sidebar_disable_expand': False,
+    'sidebar_nav_child_indent': False,
+    'sidebar_nav_compact_style': False,
+    'sidebar_nav_legacy_style': False,
+    'sidebar_nav_flat_style': False,
+    'theme': 'default',
+    'dark_mode_theme': None,
+    'button_classes': {
+        'primary': 'btn-primary',
+        'secondary': 'btn-secondary',
+        'info': 'btn-info',
+        'warning': 'btn-warning',
+        'danger': 'btn-danger',
+        'success': 'btn-success',
+    },
+}
 
 
