@@ -214,6 +214,9 @@ class DocumentDetailSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Handle file upload and compression"""
+        import tempfile
+        import os
+
         tag_ids = validated_data.pop('tag_ids', [])
         category_id = validated_data.pop('category_id', None)
 
@@ -226,17 +229,37 @@ class DocumentDetailSerializer(serializers.ModelSerializer):
             # Store original filename
             validated_data['file_original_name'] = uploaded_file.name
 
-            # Detect file type
-            file_type, mime_type = get_file_type(uploaded_file.temporary_file_path())
-            validated_data['file_type'] = file_type
+            # Handle file path for both memory and disk files
+            if hasattr(uploaded_file, 'temporary_file_path'):
+                # File is on disk
+                file_path = uploaded_file.temporary_file_path()
+                temp_file = None
+            else:
+                # File is in memory, write to temp file
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1])
+                for chunk in uploaded_file.chunks():
+                    temp_file.write(chunk)
+                temp_file.flush()
+                file_path = temp_file.name
+                temp_file.close()
 
-            # Get file size
-            validated_data['original_file_size'] = uploaded_file.size
+            try:
+                # Detect file type
+                file_type, mime_type = get_file_type(file_path)
+                validated_data['file_type'] = file_type
 
-            # Calculate checksum
-            validated_data['original_file_checksum'] = calculate_checksum(
-                uploaded_file.temporary_file_path()
-            )
+                # Get file size
+                validated_data['original_file_size'] = uploaded_file.size
+
+                # Calculate checksum
+                validated_data['original_file_checksum'] = calculate_checksum(file_path)
+            finally:
+                # Clean up temp file if we created one
+                if temp_file:
+                    try:
+                        os.unlink(temp_file.name)
+                    except:
+                        pass
 
             # Set default title from filename if not provided
             if not validated_data.get('title'):
@@ -289,17 +312,42 @@ class DocumentUploadSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Handle file upload with auto tag creation"""
+        import tempfile
+        import os
+
         tag_names = validated_data.pop('tag_names', [])
         category_id = validated_data.pop('category_id', None)
 
         user = self.context['request'].user
         uploaded_file = validated_data['file']
 
-        # Detect file type
-        file_type, mime_type = get_file_type(uploaded_file.temporary_file_path())
+        # Handle file path for both memory and disk files
+        if hasattr(uploaded_file, 'temporary_file_path'):
+            # File is on disk
+            file_path = uploaded_file.temporary_file_path()
+            temp_file = None
+        else:
+            # File is in memory, write to temp file
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1])
+            for chunk in uploaded_file.chunks():
+                temp_file.write(chunk)
+            temp_file.flush()
+            file_path = temp_file.name
+            temp_file.close()
 
-        # Calculate checksum
-        checksum = calculate_checksum(uploaded_file.temporary_file_path())
+        try:
+            # Detect file type
+            file_type, mime_type = get_file_type(file_path)
+
+            # Calculate checksum
+            checksum = calculate_checksum(file_path)
+        finally:
+            # Clean up temp file if we created one
+            if temp_file:
+                try:
+                    os.unlink(temp_file.name)
+                except:
+                    pass
 
         # Create document
         document = Document.objects.create(

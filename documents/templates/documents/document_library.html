@@ -503,6 +503,7 @@ async function uploadFiles(files) {
 
             if (response.ok) {
                 successCount++;
+                console.log(`Successfully uploaded: ${file.name}`);
             } else {
                 errorCount++;
                 const errorData = await response.json();
