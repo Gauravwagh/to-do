@@ -35,6 +35,10 @@ from .serializers import (
     UserStorageQuotaSerializer,
     CompressionStatsSerializer,
     BulkOperationSerializer,
+    FolderTreeSerializer,
+    BreadcrumbSerializer,
+    FolderContentsSerializer,
+    BulkMoveSerializer,
 )
 from .tasks import (
     compress_document_task,
@@ -71,6 +75,101 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
         ).annotate(
             document_count=Count('documents')
         )
+
+    @action(detail=False, methods=['get'])
+    def tree(self, request):
+        """
+        Get hierarchical folder tree for current user.
+        GET /api/v1/documents/categories/tree/
+        Query params:
+          - expand=true: Expand all nested levels
+        """
+        # Get root folders (those without a parent)
+        root_folders = self.get_queryset().filter(parent=None).annotate(
+            subfolder_count=Count('subfolders')
+        )
+
+        serializer = FolderTreeSerializer(
+            root_folders,
+            many=True,
+            context={'request': request}
+        )
+
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def contents(self, request, pk=None):
+        """
+        Get combined contents (subfolders + documents) for a folder.
+        GET /api/v1/documents/categories/{id}/contents/
+        """
+        folder = self.get_object()
+
+        # Get subfolders with counts
+        subfolders = folder.subfolders.annotate(
+            document_count=Count('documents'),
+            subfolder_count=Count('subfolders')
+        )
+
+        # Get documents in this folder
+        documents = Document.objects.filter(
+            user=request.user,
+            category=folder
+        ).select_related('category').prefetch_related('tags')
+
+        # Get breadcrumbs
+        breadcrumbs = folder.breadcrumbs
+
+        # Build response
+        data = {
+            'folder': DocumentCategorySerializer(folder).data,
+            'breadcrumbs': BreadcrumbSerializer(breadcrumbs, many=True).data,
+            'subfolders': DocumentCategorySerializer(subfolders, many=True).data,
+            'documents': DocumentListSerializer(documents, many=True).data,
+            'total_items': subfolders.count() + documents.count()
+        }
+
+        return Response(data)
+
+    @action(detail=True, methods=['post'])
+    def move(self, request, pk=None):
+        """
+        Move a folder to a new parent.
+        POST /api/v1/documents/categories/{id}/move/
+        Body: {"target_folder_id": "uuid" or null}
+        """
+        folder = self.get_object()
+        target_folder_id = request.data.get('target_folder_id')
+
+        # Get target folder if specified
+        target_folder = None
+        if target_folder_id:
+            try:
+                target_folder = DocumentCategory.objects.get(
+                    id=target_folder_id,
+                    user=request.user
+                )
+            except DocumentCategory.DoesNotExist:
+                return Response(
+                    {'error': 'Target folder not found or does not belong to you'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Validate move (prevent circular references)
+        if not folder.can_move_to(target_folder):
+            return Response(
+                {'error': 'Cannot move folder into itself or its descendants'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Perform move
+        folder.parent = target_folder
+        folder.save()
+
+        return Response({
+            'message': 'Folder moved successfully',
+            'folder': DocumentCategorySerializer(folder).data
+        })
 
 
 class DocumentTagViewSet(viewsets.ModelViewSet):
@@ -158,6 +257,23 @@ class DocumentViewSet(viewsets.ModelViewSet):
             return DocumentListSerializer
         else:
             return DocumentDetailSerializer
+
+    def create(self, request, *args, **kwargs):
+        """Override create to add better error logging."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.debug(f"Document upload request - FILES: {request.FILES}")
+        logger.debug(f"Document upload request - DATA: {request.data}")
+        
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.warning(f"Document upload validation errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=True, methods=['get'])
     def download(self, request, pk=None):
@@ -487,6 +603,90 @@ class DocumentViewSet(viewsets.ModelViewSet):
             {'error': 'Unknown action'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    @action(detail=False, methods=['post'])
+    def bulk_move(self, request):
+        """
+        Move multiple documents/folders to a target folder.
+        POST /api/v1/documents/documents/bulk_move/
+        Body: {
+            "document_ids": ["uuid1", "uuid2"],
+            "folder_ids": ["uuid3"],
+            "target_folder_id": "uuid4" or null
+        }
+        """
+        from django.db import transaction
+
+        serializer = BulkMoveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        document_ids = data.get('document_ids', [])
+        folder_ids = data.get('folder_ids', [])
+        target_folder_id = data.get('target_folder_id')
+
+        # Get target folder if specified
+        target_folder = None
+        if target_folder_id:
+            try:
+                target_folder = DocumentCategory.objects.get(
+                    id=target_folder_id,
+                    user=request.user
+                )
+            except DocumentCategory.DoesNotExist:
+                return Response(
+                    {'error': 'Target folder not found or does not belong to you'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Verify all documents belong to user
+        if document_ids:
+            documents = Document.objects.filter(
+                id__in=document_ids,
+                user=request.user
+            )
+            if documents.count() != len(document_ids):
+                return Response(
+                    {'error': 'Some documents not found or do not belong to you'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Verify all folders belong to user and validate circular moves
+        if folder_ids:
+            folders = DocumentCategory.objects.filter(
+                id__in=folder_ids,
+                user=request.user
+            )
+            if folders.count() != len(folder_ids):
+                return Response(
+                    {'error': 'Some folders not found or do not belong to you'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Validate each folder can be moved to target
+            for folder in folders:
+                if not folder.can_move_to(target_folder):
+                    return Response(
+                        {'error': f'Cannot move folder "{folder.name}" into itself or its descendants'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        # Perform bulk move in transaction
+        with transaction.atomic():
+            if document_ids:
+                documents.update(category=target_folder)
+
+            if folder_ids:
+                for folder in folders:
+                    folder.parent = target_folder
+                    folder.save()
+
+        return Response({
+            'status': 'success',
+            'moved_documents': len(document_ids),
+            'moved_folders': len(folder_ids),
+            'target_folder': DocumentCategorySerializer(target_folder).data if target_folder else None
+        })
 
 
 class StorageQuotaViewSet(viewsets.ReadOnlyModelViewSet):

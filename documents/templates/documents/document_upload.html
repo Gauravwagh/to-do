@@ -12,11 +12,7 @@
                 </div>
                 <div class="card-body">
                     <!-- Upload Form -->
-                    <form id="uploadForm" method="post" enctype="multipart/form-data"
-                          hx-post="/api/v1/documents/documents/"
-                          hx-encoding="multipart/form-data"
-                          hx-target="#upload-result"
-                          hx-indicator="#upload-progress">
+                    <form id="uploadForm" method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
                         <!-- File Upload Area -->
@@ -121,8 +117,8 @@
                             </div>
                         </div>
 
-                        <!-- Progress Bar -->
-                        <div id="upload-progress" class="htmx-indicator mb-3">
+                        <!-- Progress Bar (shown during upload) -->
+                        <div id="upload-progress" class="mb-3 d-none">
                             <div class="progress">
                                 <div class="progress-bar progress-bar-striped progress-bar-animated"
                                      role="progressbar" style="width: 100%">
@@ -130,9 +126,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Result Area -->
-                        <div id="upload-result"></div>
 
                         <!-- Submit Buttons -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -226,32 +219,11 @@ function formatFileSize(bytes) {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-// Handle successful upload
-document.body.addEventListener('htmx:afterRequest', function(event) {
-    if (event.detail.successful) {
-        document.getElementById('upload-result').innerHTML = `
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i>
-                <strong>Success!</strong> Document uploaded successfully.
-                Compression is being processed in the background.
-                <br>
-                <a href="/documents/" class="alert-link">View your documents</a>
-            </div>
-        `;
-        // Reset form
-        document.getElementById('uploadForm').reset();
-        clearFile();
-    } else {
-        document.getElementById('upload-result').innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>Error:</strong> Upload failed. Please try again.
-            </div>
-        `;
-    }
+// Show progress bar when form is submitted
+document.getElementById('uploadForm').addEventListener('submit', function() {
+    document.getElementById('upload-progress').classList.remove('d-none');
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
 });
 </script>
-
-<!-- HTMX -->
-<script src="https://unpkg.com/htmx.org@1.9.10"></script>
 {% endblock %}

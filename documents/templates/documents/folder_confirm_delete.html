@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Folder - {{ folder.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6 col-lg-5">
+            <div class="bg-white rounded shadow-sm p-4">
+                <div class="text-center mb-4">
+                    <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 64px; height: 64px;">
+                        <i class="material-icons text-danger" style="font-size: 32px;">folder_delete</i>
+                    </div>
+                    <h4 class="mb-1">Delete "{{ folder.name }}"?</h4>
+                    <p class="text-muted mb-0">This action cannot be undone</p>
+                </div>
+                
+                {% if doc_count > 0 or subfolder_count > 0 %}
+                <div class="alert alert-warning py-2 mb-4">
+                    <i class="material-icons" style="font-size: 18px; vertical-align: middle;">warning</i>
+                    This folder contains:
+                    <ul class="mb-0 mt-1">
+                        {% if doc_count > 0 %}
+                        <li><strong>{{ doc_count }}</strong> document{{ doc_count|pluralize }}</li>
+                        {% endif %}
+                        {% if subfolder_count > 0 %}
+                        <li><strong>{{ subfolder_count }}</strong> subfolder{{ subfolder_count|pluralize }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if doc_count > 0 or subfolder_count > 0 %}
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">What should happen to the contents?</label>
+                        
+                        <div class="form-check mb-2">
+                            <input type="radio" name="action" value="move_to_parent" id="move" class="form-check-input" checked>
+                            <label class="form-check-label" for="move">
+                                Move contents to 
+                                {% if folder.parent %}
+                                    <strong>{{ folder.parent.name }}</strong>
+                                {% else %}
+                                    <strong>My Drive</strong>
+                                {% endif %}
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="radio" name="action" value="delete_all" id="delete_all" class="form-check-input">
+                            <label class="form-check-label text-danger" for="delete_all">
+                                <strong>Delete everything</strong> (cannot be recovered)
+                            </label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        <a href="{% if folder.parent %}{% url 'documents:drive_folder' folder_id=folder.parent.id %}{% else %}{% url 'documents:drive' %}{% endif %}" 
+                           class="btn btn-light flex-fill">Cancel</a>
+                        <button type="submit" class="btn btn-danger flex-fill">
+                            <i class="material-icons" style="font-size: 18px; vertical-align: middle;">delete</i>
+                            Delete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

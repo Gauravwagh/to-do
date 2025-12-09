@@ -61,6 +61,66 @@ def get_file_extension(filename: str) -> str:
     return Path(filename).suffix[1:].lower()
 
 
+def get_file_type(file_path: str) -> Tuple[str, str]:
+    """
+    Detect file type and MIME type from a file.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        Tuple of (file_type/extension, mime_type)
+    """
+    # Get extension from path
+    extension = Path(file_path).suffix[1:].lower() if Path(file_path).suffix else 'unknown'
+    
+    # Try to detect MIME type using magic
+    try:
+        mime_type = magic.from_file(file_path, mime=True)
+    except Exception:
+        mime_type = 'application/octet-stream'
+    
+    # Map some common MIME types to file extensions if extension is unknown
+    mime_to_ext = {
+        'application/pdf': 'pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+        'text/plain': 'txt',
+        'text/csv': 'csv',
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/gif': 'gif',
+        'application/zip': 'zip',
+        'application/x-zip-compressed': 'zip',
+    }
+    
+    # If extension is unknown or generic, try to determine from MIME type
+    if extension in ('unknown', 'bin', ''):
+        extension = mime_to_ext.get(mime_type, extension)
+    
+    return extension, mime_type
+
+
+def calculate_checksum(file_path: str) -> str:
+    """
+    Calculate SHA256 checksum of a file.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        SHA256 hex digest
+    """
+    import hashlib
+    
+    sha256_hash = hashlib.sha256()
+    with open(file_path, 'rb') as f:
+        for chunk in iter(lambda: f.read(8192), b''):
+            sha256_hash.update(chunk)
+    return sha256_hash.hexdigest()
+
+
 def validate_file_extension(filename: str) -> str:
     """
     Validate file extension.

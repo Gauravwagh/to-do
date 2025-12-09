@@ -218,7 +218,7 @@ CACHES = {
 from .logging import get_logging_config
 
 # Set up logging based on DEBUG mode
-LOGGING = get_logging_config(debug=False)  # Will be overridden in local.py for dev
+LOGGING = get_logging_config(debug=True)  # Will be overridden in local.py for dev
 
 # ==============================================================================
 # REST FRAMEWORK SETTINGS

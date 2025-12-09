@@ -1,0 +1,708 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}{% if current_folder %}{{ current_folder.name }} - {% endif %}My Drive{% endblock %}
+
+{% block extra_css %}
+<style>
+    .drive-container {
+        background: #f8f9fa;
+        min-height: calc(100vh - 80px);
+    }
+
+    .drive-toolbar {
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 12px 24px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    /* Breadcrumb */
+    .drive-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 14px;
+        flex-wrap: wrap;
+    }
+
+    .drive-breadcrumb a {
+        color: #5f6368;
+        text-decoration: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+
+    .drive-breadcrumb a:hover {
+        background: #f1f3f4;
+        color: #202124;
+    }
+
+    .drive-breadcrumb .current {
+        color: #202124;
+        font-weight: 500;
+    }
+
+    .breadcrumb-separator {
+        color: #9ca3af;
+    }
+
+    /* Storage Bar */
+    .storage-bar {
+        background: white;
+        border-radius: 8px;
+        padding: 12px 16px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .quota-progress {
+        height: 6px;
+        background: #e0e0e0;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .quota-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4285f4, #34a853);
+        border-radius: 3px;
+    }
+
+    /* View Toggle */
+    .view-toggle {
+        display: inline-flex;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .view-toggle button {
+        border: none;
+        background: white;
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .view-toggle button:hover {
+        background: #f3f4f6;
+    }
+
+    .view-toggle button.active {
+        background: #4285f4;
+        color: white;
+    }
+
+    /* Section Headers */
+    .section-header {
+        font-size: 12px;
+        font-weight: 600;
+        color: #5f6368;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        padding-left: 4px;
+    }
+
+    /* Grid View */
+    .items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 16px;
+    }
+
+    /* Folder Card */
+    .folder-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .folder-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-color: #4285f4;
+    }
+
+    .folder-icon-wrapper {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .folder-icon-wrapper i {
+        font-size: 32px;
+    }
+
+    .folder-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: #202124;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-top: 8px;
+    }
+
+    .folder-meta {
+        font-size: 11px;
+        color: #5f6368;
+        margin-top: 2px;
+    }
+
+    /* File Card */
+    .file-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .file-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-color: #4285f4;
+    }
+
+    .file-icon-wrapper {
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+
+    .file-icon-wrapper i {
+        font-size: 40px;
+    }
+
+    .file-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: #202124;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .file-meta {
+        font-size: 11px;
+        color: #5f6368;
+        margin-top: 4px;
+    }
+
+    /* Item Actions */
+    .item-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .folder-card:hover .item-actions,
+    .file-card:hover .item-actions {
+        opacity: 1;
+    }
+
+    .item-actions .btn {
+        padding: 4px 8px;
+        background: white;
+        border: 1px solid #e0e0e0;
+    }
+
+    /* File Type Colors */
+    .icon-pdf { color: #ea4335; }
+    .icon-doc, .icon-docx { color: #4285f4; }
+    .icon-xls, .icon-xlsx, .icon-csv { color: #34a853; }
+    .icon-ppt, .icon-pptx { color: #fbbc04; }
+    .icon-png, .icon-jpg, .icon-jpeg, .icon-gif { color: #9334e6; }
+    .icon-zip { color: #6b7280; }
+    .icon-txt { color: #5f6368; }
+    .icon-default { color: #9ca3af; }
+    .icon-folder { color: #fbbf24; }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #d1d5db;
+    }
+
+    .empty-state h5 {
+        color: #4b5563;
+        margin: 16px 0 8px;
+    }
+
+    .empty-state p {
+        color: #9ca3af;
+    }
+
+    /* Dropdown Menu */
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        border-radius: 8px;
+        padding: 8px;
+    }
+
+    .dropdown-item {
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .dropdown-item i {
+        font-size: 18px;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+
+    /* Move Modal Folder Tree */
+    .folder-tree {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .folder-tree-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+    }
+
+    .folder-tree-item:hover {
+        background: #f1f3f4;
+    }
+
+    .folder-tree-item.selected {
+        background: #e8f0fe;
+        color: #1967d2;
+    }
+
+    .folder-tree-item i {
+        font-size: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="drive-container">
+    <!-- Toolbar -->
+    <div class="drive-toolbar">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <!-- Breadcrumb -->
+            <div class="drive-breadcrumb">
+                <a href="{% url 'documents:drive' %}">
+                    <i class="material-icons" style="font-size: 18px; vertical-align: middle;">home</i>
+                    My Drive
+                </a>
+                {% for crumb in breadcrumbs %}
+                <span class="breadcrumb-separator">
+                    <i class="material-icons" style="font-size: 16px; vertical-align: middle;">chevron_right</i>
+                </span>
+                {% if forloop.last %}
+                <span class="current">{{ crumb.name }}</span>
+                {% else %}
+                <a href="{% url 'documents:drive_folder' folder_id=crumb.id %}">{{ crumb.name }}</a>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex align-items-center gap-2">
+                <!-- Search -->
+                <form method="get" class="d-none d-md-block">
+                    <div class="input-group input-group-sm" style="width: 200px;">
+                        <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ search_query }}">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="material-icons" style="font-size: 18px;">search</i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- View Toggle -->
+                <div class="view-toggle d-none d-sm-flex">
+                    <button onclick="setView('grid')" id="gridViewBtn" class="active" title="Grid view">
+                        <i class="material-icons" style="font-size: 18px;">apps</i>
+                    </button>
+                    <button onclick="setView('list')" id="listViewBtn" title="List view">
+                        <i class="material-icons" style="font-size: 18px;">view_list</i>
+                    </button>
+                </div>
+
+                <!-- New Button -->
+                <div class="dropdown">
+                    <button class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="material-icons" style="font-size: 18px; vertical-align: middle;">add</i>
+                        New
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#newFolderModal">
+                                <i class="material-icons icon-folder">create_new_folder</i>
+                                New Folder
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                <i class="material-icons text-primary">upload_file</i>
+                                Upload File
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid py-4">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-12 col-lg-9">
+                <!-- Folders Section -->
+                {% if subfolders %}
+                <div class="mb-4">
+                    <div class="section-header">
+                        <i class="material-icons" style="font-size: 14px; vertical-align: middle;">folder</i>
+                        Folders
+                    </div>
+                    <div class="items-grid" id="foldersGrid">
+                        {% for folder in subfolders %}
+                        <div class="folder-card" ondblclick="window.location='{% url 'documents:drive_folder' folder_id=folder.id %}'">
+                            <div class="item-actions">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm" data-bs-toggle="dropdown" onclick="event.stopPropagation()">
+                                        <i class="material-icons" style="font-size: 18px;">more_vert</i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="{% url 'documents:drive_folder' folder_id=folder.id %}">
+                                            <i class="material-icons">folder_open</i> Open
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="showMoveModal('folder', '{{ folder.id }}', '{{ folder.name }}')">
+                                            <i class="material-icons">drive_file_move</i> Move
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'documents:folder_edit' folder_id=folder.id %}">
+                                            <i class="material-icons">edit</i> Rename
+                                        </a></li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'documents:folder_delete' folder_id=folder.id %}">
+                                            <i class="material-icons">delete</i> Delete
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="folder-icon-wrapper">
+                                    <i class="material-icons" style="color: {{ folder.color }};">folder</i>
+                                </div>
+                            </div>
+                            <div class="folder-name" title="{{ folder.name }}">{{ folder.name }}</div>
+                            <div class="folder-meta">{{ folder.doc_count }} item{{ folder.doc_count|pluralize }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Files Section -->
+                {% if documents %}
+                <div class="mb-4">
+                    <div class="section-header">
+                        <i class="material-icons" style="font-size: 14px; vertical-align: middle;">description</i>
+                        Files
+                    </div>
+                    <div class="items-grid" id="filesGrid">
+                        {% for doc in documents %}
+                        <div class="file-card" ondblclick="window.location='{% url 'documents:document_detail' pk=doc.id %}'">
+                            <div class="item-actions">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm" data-bs-toggle="dropdown" onclick="event.stopPropagation()">
+                                        <i class="material-icons" style="font-size: 18px;">more_vert</i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="{% url 'documents:document_detail' pk=doc.id %}">
+                                            <i class="material-icons">visibility</i> View
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'documents:document_download' pk=doc.id %}">
+                                            <i class="material-icons">download</i> Download
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="showMoveModal('document', '{{ doc.id }}', '{{ doc.title }}')">
+                                            <i class="material-icons">drive_file_move</i> Move
+                                        </a></li>
+                                        <li>
+                                            <form action="{% url 'documents:toggle_favorite' pk=doc.id %}" method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="dropdown-item" onclick="event.stopPropagation()">
+                                                    <i class="material-icons {% if doc.is_favorite %}text-warning{% endif %}">
+                                                        {% if doc.is_favorite %}star{% else %}star_border{% endif %}
+                                                    </i>
+                                                    {% if doc.is_favorite %}Remove star{% else %}Add star{% endif %}
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'documents:document_delete' pk=doc.id %}">
+                                            <i class="material-icons">delete</i> Delete
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="file-icon-wrapper icon-{{ doc.file_type }}">
+                                {% if doc.file_type == 'pdf' %}
+                                    <i class="material-icons">picture_as_pdf</i>
+                                {% elif doc.file_type in 'docx,doc' %}
+                                    <i class="material-icons">description</i>
+                                {% elif doc.file_type in 'xlsx,xls,csv' %}
+                                    <i class="material-icons">table_chart</i>
+                                {% elif doc.file_type in 'pptx,ppt' %}
+                                    <i class="material-icons">slideshow</i>
+                                {% elif doc.file_type in 'png,jpg,jpeg,gif' %}
+                                    <i class="material-icons">image</i>
+                                {% elif doc.file_type == 'zip' %}
+                                    <i class="material-icons">folder_zip</i>
+                                {% else %}
+                                    <i class="material-icons">insert_drive_file</i>
+                                {% endif %}
+                            </div>
+                            <div class="file-name" title="{{ doc.title }}">
+                                {% if doc.is_favorite %}<i class="material-icons text-warning" style="font-size: 14px; vertical-align: middle;">star</i>{% endif %}
+                                {{ doc.title }}
+                            </div>
+                            <div class="file-meta">{{ doc.file_size_display }} • {{ doc.upload_date|naturaltime }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Empty State -->
+                {% if not subfolders and not documents %}
+                <div class="empty-state">
+                    <i class="material-icons">folder_open</i>
+                    <h5>{% if current_folder %}This folder is empty{% else %}Your drive is empty{% endif %}</h5>
+                    <p>Click "New" to create a folder or upload files</p>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#newFolderModal">
+                            <i class="material-icons" style="font-size: 18px; vertical-align: middle;">create_new_folder</i>
+                            New Folder
+                        </button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="material-icons" style="font-size: 18px; vertical-align: middle;">upload_file</i>
+                            Upload File
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar Info -->
+            <div class="col-12 col-lg-3">
+                <!-- Storage -->
+                <div class="storage-bar mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-medium" style="font-size: 13px;">Storage</span>
+                        <span class="text-muted" style="font-size: 12px;">{{ quota.original_used|filesizeformat }} / {{ quota.original_quota|filesizeformat }}</span>
+                    </div>
+                    <div class="quota-progress">
+                        <div class="quota-fill" style="width: {{ usage_percentage|floatformat:0 }}%"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Access -->
+                <div class="bg-white rounded border p-3">
+                    <div class="fw-medium mb-3" style="font-size: 13px;">Quick Access</div>
+                    <a href="{% url 'documents:drive' %}" class="d-flex align-items-center text-decoration-none text-dark py-2">
+                        <i class="material-icons me-2" style="font-size: 20px; color: #5f6368;">home</i>
+                        <span style="font-size: 13px;">My Drive</span>
+                    </a>
+                    <a href="{% url 'documents:document_list' %}?filter=recent" class="d-flex align-items-center text-decoration-none text-dark py-2">
+                        <i class="material-icons me-2" style="font-size: 20px; color: #5f6368;">schedule</i>
+                        <span style="font-size: 13px;">Recent</span>
+                    </a>
+                    <a href="{% url 'documents:document_list' %}?is_favorite=true" class="d-flex align-items-center text-decoration-none text-dark py-2">
+                        <i class="material-icons me-2" style="font-size: 20px; color: #fbbf24;">star</i>
+                        <span style="font-size: 13px;">Starred</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Folder Modal -->
+<div class="modal fade" id="newFolderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <form method="post" action="{% if current_folder %}{% url 'documents:folder_create_in' parent_id=current_folder.id %}{% else %}{% url 'documents:folder_create' %}{% endif %}">
+                {% csrf_token %}
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title">New Folder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" name="name" class="form-control" placeholder="Folder name" required autofocus>
+                    <input type="hidden" name="color" value="#fbbf24">
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <form method="post" action="{% if current_folder %}{% url 'documents:upload_to_folder_in' folder_id=current_folder.id %}{% else %}{% url 'documents:upload_to_folder' %}{% endif %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title">Upload File</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="file" name="file" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" name="title" class="form-control" placeholder="Title (optional)">
+                    </div>
+                    {% if current_folder %}
+                    <div class="alert alert-light py-2 mb-0" style="font-size: 13px;">
+                        <i class="material-icons" style="font-size: 16px; vertical-align: middle;">folder</i>
+                        Upload to: <strong>{{ current_folder.name }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Move Modal -->
+<div class="modal fade" id="moveModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <form method="post" action="{% url 'documents:move_item' %}" id="moveForm">
+                {% csrf_token %}
+                <input type="hidden" name="item_type" id="moveItemType">
+                <input type="hidden" name="item_id" id="moveItemId">
+                <input type="hidden" name="target_folder_id" id="moveTargetFolder">
+                
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title">Move "<span id="moveItemName"></span>"</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3" style="font-size: 13px;">Select destination:</p>
+                    <div class="folder-tree">
+                        <div class="folder-tree-item" data-folder-id="" onclick="selectMoveTarget(this, '')">
+                            <i class="material-icons text-primary">home</i>
+                            <span>My Drive</span>
+                        </div>
+                        {% for folder in all_folders %}
+                        <div class="folder-tree-item" style="padding-left: {{ folder.depth|add:1 }}rem;" data-folder-id="{{ folder.id }}" onclick="selectMoveTarget(this, '{{ folder.id }}')">
+                            <i class="material-icons" style="color: {{ folder.color }};">folder</i>
+                            <span>{{ folder.name }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Move</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// View toggle
+function setView(view) {
+    const grids = document.querySelectorAll('.items-grid');
+    const gridBtn = document.getElementById('gridViewBtn');
+    const listBtn = document.getElementById('listViewBtn');
+    
+    if (view === 'list') {
+        grids.forEach(g => {
+            g.style.gridTemplateColumns = '1fr';
+            g.querySelectorAll('.file-card').forEach(c => {
+                c.querySelector('.file-icon-wrapper').style.height = '40px';
+                c.querySelector('.file-icon-wrapper').style.width = '40px';
+                c.querySelector('.file-icon-wrapper i').style.fontSize = '24px';
+            });
+        });
+        listBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+    } else {
+        grids.forEach(g => {
+            g.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
+            g.querySelectorAll('.file-card').forEach(c => {
+                c.querySelector('.file-icon-wrapper').style.height = '100px';
+                c.querySelector('.file-icon-wrapper').style.width = '100%';
+                c.querySelector('.file-icon-wrapper i').style.fontSize = '40px';
+            });
+        });
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+    }
+    localStorage.setItem('driveView', view);
+}
+
+// Load saved view preference
+document.addEventListener('DOMContentLoaded', () => {
+    const savedView = localStorage.getItem('driveView') || 'grid';
+    setView(savedView);
+});
+
+// Move modal
+function showMoveModal(itemType, itemId, itemName) {
+    document.getElementById('moveItemType').value = itemType;
+    document.getElementById('moveItemId').value = itemId;
+    document.getElementById('moveItemName').textContent = itemName;
+    document.getElementById('moveTargetFolder').value = '';
+    
+    document.querySelectorAll('.folder-tree-item').forEach(el => {
+        el.classList.remove('selected');
+        el.style.display = el.dataset.folderId === itemId && itemType === 'folder' ? 'none' : 'flex';
+    });
+    
+    new bootstrap.Modal(document.getElementById('moveModal')).show();
+}
+
+function selectMoveTarget(element, folderId) {
+    document.querySelectorAll('.folder-tree-item').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    document.getElementById('moveTargetFolder').value = folderId;
+}
+</script>
+{% endblock %}

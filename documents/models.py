@@ -21,7 +21,10 @@ from django.utils.crypto import get_random_string
 
 
 class DocumentCategory(models.Model):
-    """Organize documents into folders/categories"""
+    """
+    Folder model for organizing documents (Google Drive-like structure).
+    Supports nested folders with unlimited depth.
+    """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
@@ -33,24 +36,115 @@ class DocumentCategory(models.Model):
     description = models.TextField(blank=True)
     color = models.CharField(max_length=7, default='#3B82F6', help_text='Hex color code')
     icon = models.CharField(max_length=50, default='folder', help_text='Icon name')
+    
+    # Parent folder for nesting (null = root level)
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='subfolders'
+    )
+    
+    # Cached path for efficient queries
+    path = models.CharField(max_length=1000, blank=True, help_text='Cached full path')
+    depth = models.PositiveIntegerField(default=0, help_text='Nesting depth level')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name_plural = 'Document Categories'
-        unique_together = ('user', 'name')
+        verbose_name = 'Folder'
+        verbose_name_plural = 'Folders'
+        unique_together = ('user', 'name', 'parent')
         indexes = [
             models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['user', 'parent']),
+            models.Index(fields=['user', 'path']),
         ]
         ordering = ['name']
 
     def __str__(self):
-        return f"{self.user.username} - {self.name}"
+        return f"{self.user.username} - {self.full_path}"
+
+    def save(self, *args, **kwargs):
+        """Update path and depth on save"""
+        self._update_path_and_depth()
+        super().save(*args, **kwargs)
+        # Update children paths if this folder's path changed
+        self._update_children_paths()
+
+    def _update_path_and_depth(self):
+        """Calculate and set the path and depth"""
+        if self.parent:
+            self.path = f"{self.parent.path}/{self.name}"
+            self.depth = self.parent.depth + 1
+        else:
+            self.path = self.name
+            self.depth = 0
+
+    def _update_children_paths(self):
+        """Recursively update all children's paths"""
+        for child in self.subfolders.all():
+            child.save()
+
+    @property
+    def full_path(self):
+        """Get full path from root"""
+        return self.path or self.name
+
+    @property
+    def breadcrumbs(self):
+        """Get list of ancestors for breadcrumb navigation"""
+        crumbs = []
+        current = self
+        while current:
+            crumbs.insert(0, current)
+            current = current.parent
+        return crumbs
 
     @property
     def document_count(self):
-        """Count of documents in this category"""
+        """Count of documents directly in this folder"""
         return self.documents.count()
+
+    @property
+    def total_document_count(self):
+        """Count of all documents including subfolders"""
+        count = self.documents.count()
+        for subfolder in self.subfolders.all():
+            count += subfolder.total_document_count
+        return count
+
+    @property
+    def subfolder_count(self):
+        """Count of direct subfolders"""
+        return self.subfolders.count()
+
+    def get_ancestors(self):
+        """Get all ancestor folders"""
+        ancestors = []
+        current = self.parent
+        while current:
+            ancestors.insert(0, current)
+            current = current.parent
+        return ancestors
+
+    def get_descendants(self):
+        """Get all descendant folders"""
+        descendants = list(self.subfolders.all())
+        for subfolder in self.subfolders.all():
+            descendants.extend(subfolder.get_descendants())
+        return descendants
+
+    def can_move_to(self, target_folder):
+        """Check if this folder can be moved to target (prevent circular references)"""
+        if target_folder is None:
+            return True
+        if target_folder == self:
+            return False
+        # Check if target is a descendant of this folder
+        return target_folder not in self.get_descendants()
 
 
 class DocumentTag(models.Model):
@@ -161,16 +255,27 @@ class Document(models.Model):
         default='pending'
     )
 
-    # Organization
+    # Organization - folder (category) is the parent folder (null = root/My Drive)
     category = models.ForeignKey(
         DocumentCategory,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='documents'
+        related_name='documents',
+        verbose_name='Folder'
     )
     tags = models.ManyToManyField(DocumentTag, blank=True, related_name='documents')
     is_favorite = models.BooleanField(default=False)
+
+    @property
+    def folder(self):
+        """Alias for category - treat as folder"""
+        return self.category
+
+    @folder.setter
+    def folder(self, value):
+        """Alias setter for category"""
+        self.category = value
 
     # Timestamps
     upload_date = models.DateTimeField(auto_now_add=True)

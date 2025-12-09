@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit{% else %}New{% endif %} Folder{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6 col-lg-5">
+            <div class="bg-white rounded shadow-sm p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <i class="material-icons text-warning me-2" style="font-size: 32px;">folder</i>
+                    <h4 class="mb-0">{% if is_edit %}Rename Folder{% else %}New Folder{% endif %}</h4>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Folder Name</label>
+                        <input type="text" 
+                               name="name" 
+                               class="form-control" 
+                               placeholder="Enter folder name"
+                               value="{% if folder %}{{ folder.name }}{% endif %}"
+                               required 
+                               autofocus>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description (optional)</label>
+                        <textarea name="description" 
+                                  class="form-control" 
+                                  rows="2"
+                                  placeholder="Add a description">{% if folder %}{{ folder.description }}{% endif %}</textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Folder Color</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            {% with colors="#fbbf24,#f59e0b,#3b82f6,#10b981,#ef4444,#8b5cf6,#ec4899,#6b7280" %}
+                            {% for color in colors|make_list|join:","|split:"," %}
+                            <label class="color-option" style="cursor: pointer;">
+                                <input type="radio" 
+                                       name="color" 
+                                       value="{{ color }}" 
+                                       class="d-none"
+                                       {% if folder.color == color %}checked{% elif not folder and forloop.first %}checked{% endif %}>
+                                <span class="d-inline-block rounded-circle border border-2" 
+                                      style="width: 32px; height: 32px; background: {{ color }}; transition: transform 0.2s;"></span>
+                            </label>
+                            {% endfor %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                    
+                    {% if parent_folder %}
+                    <div class="alert alert-light py-2 mb-3" style="font-size: 13px;">
+                        <i class="material-icons" style="font-size: 16px; vertical-align: middle;">folder</i>
+                        Create in: <strong>{{ parent_folder.name }}</strong>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        <a href="{% if folder.parent %}{% url 'documents:drive_folder' folder_id=folder.parent.id %}{% else %}{% url 'documents:drive' %}{% endif %}" 
+                           class="btn btn-light flex-fill">Cancel</a>
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            {% if is_edit %}Save{% else %}Create{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.color-option input:checked + span {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+</style>
+{% endblock %}

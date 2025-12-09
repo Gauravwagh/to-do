@@ -300,15 +300,22 @@ class DocumentDetailSerializer(serializers.ModelSerializer):
 class DocumentUploadSerializer(serializers.ModelSerializer):
     """Serializer specifically for document upload"""
 
+    title = serializers.CharField(required=False, allow_blank=True)
     category_id = serializers.UUIDField(required=False, allow_null=True)
-    tag_names = serializers.ListField(
-        child=serializers.CharField(max_length=50),
-        required=False
-    )
+    tag_names = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Document
         fields = ['file', 'title', 'description', 'category_id', 'tag_names']
+
+    def validate_tag_names(self, value):
+        """Convert comma-separated string to list of tag names."""
+        if not value:
+            return []
+        if isinstance(value, list):
+            return value
+        # Handle comma-separated string
+        return [tag.strip() for tag in value.split(',') if tag.strip()]
 
     def create(self, validated_data):
         """Handle file upload with auto tag creation"""
@@ -349,10 +356,14 @@ class DocumentUploadSerializer(serializers.ModelSerializer):
                 except:
                     pass
 
-        # Create document
+        # Create document - use filename if title is empty
+        title = validated_data.get('title', '').strip()
+        if not title:
+            title = uploaded_file.name
+        
         document = Document.objects.create(
             user=user,
-            title=validated_data.get('title', uploaded_file.name),
+            title=title,
             description=validated_data.get('description', ''),
             file=uploaded_file,
             file_original_name=uploaded_file.name,
@@ -528,5 +539,96 @@ class BulkOperationSerializer(serializers.Serializer):
 
         if action == 'change_category' and 'category_id' not in data:
             raise serializers.ValidationError("category_id required for change_category")
+
+        return data
+
+
+class FolderTreeSerializer(serializers.ModelSerializer):
+    """Serializer for folder tree structure with nested children"""
+
+    children = serializers.SerializerMethodField()
+    document_count = serializers.IntegerField(read_only=True)
+    subfolder_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = DocumentCategory
+        fields = [
+            'id',
+            'name',
+            'description',
+            'color',
+            'icon',
+            'parent',
+            'path',
+            'depth',
+            'document_count',
+            'subfolder_count',
+            'children',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'path', 'depth', 'created_at']
+
+    def get_children(self, obj):
+        """Get nested children folders"""
+        # Check if we should expand all levels or just direct children
+        request = self.context.get('request')
+        expand_all = request and request.query_params.get('expand') == 'true'
+
+        if expand_all or not hasattr(obj, '_no_recursion'):
+            # Annotate subfolders with counts
+            from django.db.models import Count
+            subfolders = obj.subfolders.annotate(
+                document_count=Count('documents'),
+                subfolder_count=Count('subfolders')
+            )
+            # Recursively serialize children
+            return FolderTreeSerializer(
+                subfolders,
+                many=True,
+                context=self.context
+            ).data
+        return []
+
+
+class BreadcrumbSerializer(serializers.ModelSerializer):
+    """Simple serializer for breadcrumb navigation"""
+
+    class Meta:
+        model = DocumentCategory
+        fields = ['id', 'name', 'path']
+
+
+class FolderContentsSerializer(serializers.Serializer):
+    """Serializer for combined folder contents (subfolders + documents)"""
+
+    folder = DocumentCategorySerializer(read_only=True)
+    breadcrumbs = BreadcrumbSerializer(many=True, read_only=True)
+    subfolders = DocumentCategorySerializer(many=True, read_only=True)
+    documents = DocumentListSerializer(many=True, read_only=True)
+    total_items = serializers.IntegerField(read_only=True)
+
+
+class BulkMoveSerializer(serializers.Serializer):
+    """Serializer for bulk move operations"""
+
+    document_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        default=[]
+    )
+    folder_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        default=[]
+    )
+    target_folder_id = serializers.UUIDField(required=False, allow_null=True)
+
+    def validate(self, data):
+        """Validate that at least one item is being moved"""
+        document_ids = data.get('document_ids', [])
+        folder_ids = data.get('folder_ids', [])
+
+        if not document_ids and not folder_ids:
+            raise serializers.ValidationError("At least one document or folder must be specified")
 
         return data

@@ -8,6 +8,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 
+# Override logging for local development to show full tracebacks
+from .logging import get_logging_config
+LOGGING = get_logging_config(debug=True)
+
 # Database for local development (SQLite for simplicity)
 DATABASES = {
     'default': {
@@ -16,8 +20,26 @@ DATABASES = {
     }
 }
 
+# Use local memory cache for development (simpler, no external dependencies)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# Silence django_ratelimit checks in development (not critical for local dev)
+# Rate limiting requires Redis/Memcached which may not be available locally
+SILENCED_SYSTEM_CHECKS = ['django_ratelimit.W001', 'django_ratelimit.E003']
+
 # Email backend for development
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# REST Framework debug settings - show full error details
+REST_FRAMEWORK = {
+    **globals().get('REST_FRAMEWORK', {}),
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
+}
 
 # Django Debug Toolbar
 if DEBUG:

@@ -146,6 +146,11 @@ def get_logging_config(debug=False):
             'level': LOG_LEVEL,
             'propagate': False,
         },
+        'documents': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
         # Middleware
         'config.middleware': {
             'handlers': ['console', 'file', 'error_file'],

@@ -1,0 +1,782 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}{% if current_folder %}{{ current_folder.name }} - {% endif %}My Drive{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ======================
+       LAYOUT
+       ====================== */
+    .drive-layout {
+        display: flex;
+        height: calc(100vh - 80px);
+        background: #f8f9fa;
+    }
+
+    /* ======================
+       SIDEBAR
+       ====================== */
+    .drive-sidebar {
+        width: 260px;
+        background: white;
+        border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar-header {
+        padding: 16px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0;
+    }
+
+    .sidebar-footer {
+        padding: 12px 16px;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    /* Folder Tree */
+    .folder-tree-item {
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+        user-select: none;
+    }
+
+    .folder-tree-item:hover {
+        background: #f1f3f4;
+    }
+
+    .folder-tree-item.active {
+        background: #e8f0fe;
+        color: #1967d2;
+    }
+
+    .folder-tree-item.selected {
+        background: #e3f2fd;
+    }
+
+    .folder-toggle {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .folder-toggle.expanded {
+        transform: rotate(90deg);
+    }
+
+    .folder-toggle i {
+        font-size: 18px;
+        color: #5f6368;
+    }
+
+    .folder-children {
+        display: none;
+    }
+
+    .folder-children.expanded {
+        display: block;
+    }
+
+    .folder-tree-item .folder-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .folder-tree-item .folder-name {
+        flex: 1;
+        font-size: 14px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .folder-tree-item .folder-count {
+        font-size: 11px;
+        color: #5f6368;
+    }
+
+    /* Storage Info */
+    .storage-info {
+        font-size: 12px;
+    }
+
+    .quota-progress {
+        height: 4px;
+        background: #e0e0e0;
+        border-radius: 2px;
+        overflow: hidden;
+        margin: 6px 0;
+    }
+
+    .quota-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4285f4, #34a853);
+    }
+
+    /* ======================
+       MAIN CONTENT
+       ====================== */
+    .drive-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .drive-toolbar {
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .drive-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+    }
+
+    /* Hamburger (Mobile) */
+    .hamburger-btn {
+        display: none;
+        border: none;
+        background: transparent;
+        padding: 8px;
+        cursor: pointer;
+    }
+
+    /* Breadcrumb */
+    .drive-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 14px;
+        flex-wrap: wrap;
+    }
+
+    .drive-breadcrumb a {
+        color: #5f6368;
+        text-decoration: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+
+    .drive-breadcrumb a:hover {
+        background: #f1f3f4;
+        color: #202124;
+    }
+
+    .drive-breadcrumb .current {
+        color: #202124;
+        font-weight: 500;
+    }
+
+    /* ======================
+       ITEMS (Folders & Files)
+       ====================== */
+    .section-header {
+        font-size: 12px;
+        font-weight: 600;
+        color: #5f6368;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+    }
+
+    .items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 16px;
+    }
+
+    /* Folder/File Card */
+    .folder-card, .file-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .folder-card:hover, .file-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-color: #4285f4;
+    }
+
+    .folder-card.selected, .file-card.selected {
+        background: #e8f0fe;
+        border-color: #4285f4;
+    }
+
+    /* Checkbox for multi-select */
+    .item-checkbox {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+    }
+
+    .folder-card:hover .item-checkbox,
+    .file-card:hover .item-checkbox,
+    .selection-mode .item-checkbox,
+    .item-checkbox input:checked {
+        opacity: 1;
+    }
+
+    .item-checkbox input {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .item-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .folder-card:hover .item-actions,
+    .file-card:hover .item-actions {
+        opacity: 1;
+    }
+
+    /* Folder specific */
+    .folder-icon-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .folder-icon-wrapper i {
+        font-size: 32px;
+    }
+
+    .folder-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: #202124;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .folder-meta {
+        font-size: 11px;
+        color: #5f6368;
+        margin-top: 2px;
+    }
+
+    /* File specific */
+    .file-icon-wrapper {
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+
+    .file-icon-wrapper i {
+        font-size: 40px;
+    }
+
+    .file-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: #202124;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .file-meta {
+        font-size: 11px;
+        color: #5f6368;
+        margin-top: 4px;
+    }
+
+    /* Drag and Drop */
+    .dragging {
+        opacity: 0.5;
+    }
+
+    .drag-over {
+        background: #e8f0fe !important;
+        border: 2px dashed #4285f4 !important;
+    }
+
+    /* ======================
+       CONTEXT MENU
+       ====================== */
+    .context-menu {
+        position: fixed;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        padding: 8px;
+        min-width: 200px;
+        z-index: 9999;
+        display: none;
+    }
+
+    .context-menu-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+
+    .context-menu-item:hover {
+        background: #f1f3f4;
+    }
+
+    .context-menu-item.danger {
+        color: #dc3545;
+    }
+
+    .context-menu-divider {
+        height: 1px;
+        background: #e0e0e0;
+        margin: 4px 0;
+    }
+
+    /* ======================
+       BULK ACTIONS TOOLBAR
+       ====================== */
+    .bulk-actions-toolbar {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        padding: 12px 24px;
+        display: none;
+        align-items: center;
+        gap: 16px;
+        z-index: 1000;
+    }
+
+    .bulk-actions-toolbar.active {
+        display: flex;
+    }
+
+    .selected-count {
+        font-size: 14px;
+        font-weight: 500;
+        color: #202124;
+    }
+
+    .bulk-actions-toolbar .btn {
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+
+    /* ======================
+       FILE TYPE COLORS
+       ====================== */
+    .icon-pdf { color: #ea4335; }
+    .icon-doc, .icon-docx { color: #4285f4; }
+    .icon-xls, .icon-xlsx, .icon-csv { color: #34a853; }
+    .icon-ppt, .icon-pptx { color: #fbbc04; }
+    .icon-png, .icon-jpg, .icon-jpeg, .icon-gif { color: #9334e6; }
+    .icon-zip { color: #6b7280; }
+    .icon-txt { color: #5f6368; }
+    .icon-folder { color: #fbbf24; }
+
+    /* ======================
+       RESPONSIVE
+       ====================== */
+    @media (max-width: 991px) {
+        .drive-sidebar {
+            position: fixed;
+            left: -260px;
+            top: 80px;
+            height: calc(100vh - 80px);
+            z-index: 1001;
+        }
+
+        .drive-sidebar.open {
+            transform: translateX(260px);
+        }
+
+        .hamburger-btn {
+            display: block;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        .items-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        }
+    }
+
+    @media (max-width: 576px) {
+        .items-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+
+        .drive-toolbar {
+            padding: 12px 16px;
+        }
+
+        .drive-content {
+            padding: 16px;
+        }
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #d1d5db;
+    }
+
+    .empty-state h5 {
+        color: #4b5563;
+        margin: 16px 0 8px;
+    }
+
+    .empty-state p {
+        color: #9ca3af;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Sidebar Overlay (Mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="drive-layout">
+    <!-- LEFT SIDEBAR -->
+    <aside class="drive-sidebar" id="driveSidebar">
+        <!-- Sidebar Header -->
+        <div class="sidebar-header">
+            <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#newFolderModal">
+                <i class="material-icons" style="font-size: 18px; vertical-align: middle;">add</i>
+                New
+            </button>
+        </div>
+
+        <!-- Folder Tree -->
+        <div class="sidebar-content">
+            <div class="folder-tree-item active" data-folder-id="" onclick="navigateToFolder(null, event)">
+                <span class="folder-toggle"></span>
+                <i class="material-icons folder-icon text-primary">home</i>
+                <span class="folder-name">My Drive</span>
+            </div>
+
+            <div id="folderTreeContainer">
+                <!-- Folder tree will be loaded here via JavaScript -->
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <div class="folder-tree-item" onclick="window.location='{% url "documents:document_list" %}?is_favorite=true'">
+                    <span class="folder-toggle"></span>
+                    <i class="material-icons folder-icon text-warning">star</i>
+                    <span class="folder-name">Starred</span>
+                </div>
+                <div class="folder-tree-item" onclick="window.location='{% url "documents:document_list" %}?filter=recent'">
+                    <span class="folder-toggle"></span>
+                    <i class="material-icons folder-icon text-info">schedule</i>
+                    <span class="folder-name">Recent</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Info -->
+        <div class="sidebar-footer">
+            <div class="storage-info">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-medium">Storage</span>
+                    <span class="text-muted">{{ usage_percentage|floatformat:0 }}%</span>
+                </div>
+                <div class="quota-progress">
+                    <div class="quota-fill" style="width: {{ usage_percentage|floatformat:0 }}%"></div>
+                </div>
+                <div class="text-muted mt-1">
+                    {{ quota.original_used|filesizeformat }} of {{ quota.original_quota|filesizeformat }}
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="drive-main">
+        <!-- Toolbar -->
+        <div class="drive-toolbar">
+            <div class="d-flex align-items-center gap-3">
+                <!-- Hamburger (Mobile) -->
+                <button class="hamburger-btn" onclick="toggleSidebar()">
+                    <i class="material-icons">menu</i>
+                </button>
+
+                <!-- Breadcrumb -->
+                <div class="drive-breadcrumb">
+                    <a href="{% url 'documents:drive' %}">
+                        <i class="material-icons" style="font-size: 18px; vertical-align: middle;">home</i>
+                        My Drive
+                    </a>
+                    {% for crumb in breadcrumbs %}
+                    <span class="breadcrumb-separator">
+                        <i class="material-icons" style="font-size: 16px; vertical-align: middle;">chevron_right</i>
+                    </span>
+                    {% if forloop.last %}
+                    <span class="current">{{ crumb.name }}</span>
+                    {% else %}
+                    <a href="{% url 'documents:drive_folder' folder_id=crumb.id %}">{{ crumb.name }}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <!-- Search -->
+                <form method="get" class="d-none d-md-block">
+                    <div class="input-group input-group-sm" style="width: 200px;">
+                        <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ search_query }}">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="material-icons" style="font-size: 18px;">search</i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- View Toggle -->
+                <div class="btn-group btn-group-sm d-none d-sm-flex">
+                    <button onclick="setView('grid')" id="gridViewBtn" class="btn btn-outline-secondary active">
+                        <i class="material-icons" style="font-size: 18px;">apps</i>
+                    </button>
+                    <button onclick="setView('list')" id="listViewBtn" class="btn btn-outline-secondary">
+                        <i class="material-icons" style="font-size: 18px;">view_list</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="drive-content">
+            <!-- Folders Section -->
+            {% if subfolders %}
+            <div class="mb-4">
+                <div class="section-header">
+                    <i class="material-icons" style="font-size: 14px; vertical-align: middle;">folder</i>
+                    Folders
+                </div>
+                <div class="items-grid" id="foldersGrid">
+                    {% for folder in subfolders %}
+                    <div class="folder-card"
+                         data-item-id="{{ folder.id }}"
+                         data-item-type="folder"
+                         draggable="true"
+                         ondblclick="navigateToFolder('{{ folder.id }}', event)"
+                         oncontextmenu="showContextMenu(event, 'folder', '{{ folder.id }}', '{{ folder.name|escapejs }}')">
+                        <div class="item-checkbox">
+                            <input type="checkbox" onclick="toggleSelection(event, '{{ folder.id }}', 'folder')">
+                        </div>
+                        <div class="folder-icon-wrapper">
+                            <i class="material-icons" style="color: {{ folder.color }};">folder</i>
+                            <div>
+                                <div class="folder-name" title="{{ folder.name }}">{{ folder.name }}</div>
+                                <div class="folder-meta">{{ folder.doc_count }} item{{ folder.doc_count|pluralize }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Files Section -->
+            {% if documents %}
+            <div class="mb-4">
+                <div class="section-header">
+                    <i class="material-icons" style="font-size: 14px; vertical-align: middle;">description</i>
+                    Files
+                </div>
+                <div class="items-grid" id="filesGrid">
+                    {% for doc in documents %}
+                    <div class="file-card"
+                         data-item-id="{{ doc.id }}"
+                         data-item-type="document"
+                         draggable="true"
+                         ondblclick="window.location='{% url 'documents:document_detail' pk=doc.id %}'"
+                         oncontextmenu="showContextMenu(event, 'document', '{{ doc.id }}', '{{ doc.title|escapejs }}')">
+                        <div class="item-checkbox">
+                            <input type="checkbox" onclick="toggleSelection(event, '{{ doc.id }}', 'document')">
+                        </div>
+                        <div class="file-icon-wrapper icon-{{ doc.file_type }}">
+                            {% if doc.file_type == 'pdf' %}
+                                <i class="material-icons">picture_as_pdf</i>
+                            {% elif doc.file_type in 'docx,doc' %}
+                                <i class="material-icons">description</i>
+                            {% elif doc.file_type in 'xlsx,xls,csv' %}
+                                <i class="material-icons">table_chart</i>
+                            {% elif doc.file_type in 'pptx,ppt' %}
+                                <i class="material-icons">slideshow</i>
+                            {% elif doc.file_type in 'png,jpg,jpeg,gif' %}
+                                <i class="material-icons">image</i>
+                            {% elif doc.file_type == 'zip' %}
+                                <i class="material-icons">folder_zip</i>
+                            {% else %}
+                                <i class="material-icons">insert_drive_file</i>
+                            {% endif %}
+                        </div>
+                        <div class="file-name" title="{{ doc.title }}">
+                            {% if doc.is_favorite %}<i class="material-icons text-warning" style="font-size: 14px; vertical-align: middle;">star</i>{% endif %}
+                            {{ doc.title }}
+                        </div>
+                        <div class="file-meta">{{ doc.file_size_display }} • {{ doc.upload_date|naturaltime }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Empty State -->
+            {% if not subfolders and not documents %}
+            <div class="empty-state">
+                <i class="material-icons">folder_open</i>
+                <h5>{% if current_folder %}This folder is empty{% else %}Your drive is empty{% endif %}</h5>
+                <p>Create a folder or upload files to get started</p>
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#newFolderModal">
+                        <i class="material-icons" style="font-size: 18px; vertical-align: middle;">create_new_folder</i>
+                        New Folder
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="material-icons" style="font-size: 18px; vertical-align: middle;">upload_file</i>
+                        Upload File
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<!-- Context Menu -->
+<div class="context-menu" id="contextMenu">
+    <!-- Populated dynamically -->
+</div>
+
+<!-- Bulk Actions Toolbar -->
+<div class="bulk-actions-toolbar" id="bulkActionsToolbar">
+    <span class="selected-count" id="selectedCount">0 selected</span>
+    <button class="btn btn-sm btn-outline-primary" onclick="bulkMove()">
+        <i class="material-icons" style="font-size: 16px; vertical-align: middle;">drive_file_move</i>
+        Move
+    </button>
+    <button class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+        <i class="material-icons" style="font-size: 16px; vertical-align: middle;">delete</i>
+        Delete
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">Cancel</button>
+</div>
+
+<!-- Modals -->
+{% include 'documents/partials/modals.html' %}
+
+<!-- JavaScript -->
+<script src="{% static 'js/drive/core.js' %}"></script>
+<script src="{% static 'js/drive/folder-tree.js' %}"></script>
+<script src="{% static 'js/drive/context-menu.js' %}"></script>
+<script src="{% static 'js/drive/selection.js' %}"></script>
+<script src="{% static 'js/drive/drag-drop.js' %}"></script>
+
+<script>
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Load folder tree
+    loadFolderTree();
+
+    // Load saved view preference
+    const savedView = localStorage.getItem('driveView') || 'grid';
+    setView(savedView);
+
+    // Initialize drag and drop
+    initializeDragDrop();
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+
+    // Click outside to hide context menu
+    document.addEventListener('click', () => {
+        document.getElementById('contextMenu').style.display = 'none';
+    });
+});
+
+// Get CSRF token for API requests
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -8,7 +8,15 @@ import time
 from django.http import JsonResponse, HttpResponse
 from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
-import sentry_sdk
+
+# Import Sentry conditionally
+try:
+    import sentry_sdk
+    SENTRY_AVAILABLE = True
+except ImportError:
+    sentry_sdk = None
+    SENTRY_AVAILABLE = False
+
 from config.exceptions import ApplicationError
 from config.logging_utils import get_request_context, log_exception
 
@@ -25,9 +33,10 @@ class RequestIDMiddleware(MiddlewareMixin):
         request.id = str(uuid.uuid4())
         request.start_time = time.time()
 
-        # Set request ID in Sentry scope
-        with sentry_sdk.push_scope() as scope:
-            scope.set_tag("request_id", request.id)
+        # Set request ID in Sentry scope (if available)
+        if SENTRY_AVAILABLE and sentry_sdk:
+            with sentry_sdk.push_scope() as scope:
+                scope.set_tag("request_id", request.id)
 
         return None
 
@@ -80,13 +89,14 @@ class ErrorHandlingMiddleware(MiddlewareMixin):
                 exc_info=False
             )
 
-            # Send to Sentry with lower severity
-            with sentry_sdk.push_scope() as scope:
-                scope.set_level('warning')
-                scope.set_tag('error_code', exception.error_code)
-                for key, value in context.items():
-                    scope.set_tag(key, str(value)[:200])
-                sentry_sdk.capture_exception(exception)
+            # Send to Sentry with lower severity (if available)
+            if SENTRY_AVAILABLE and sentry_sdk:
+                with sentry_sdk.push_scope() as scope:
+                    scope.set_level('warning')
+                    scope.set_tag('error_code', exception.error_code)
+                    for key, value in context.items():
+                        scope.set_tag(key, str(value)[:200])
+                    sentry_sdk.capture_exception(exception)
 
             return self._create_error_response(
                 request,
@@ -103,22 +113,23 @@ class ErrorHandlingMiddleware(MiddlewareMixin):
             exc_info=True
         )
 
-        # Send full exception to Sentry
-        with sentry_sdk.push_scope() as scope:
-            scope.set_level('error')
-            scope.set_tag('request_id', request_id)
-            for key, value in context.items():
-                scope.set_tag(key, str(value)[:200])
+        # Send full exception to Sentry (if available)
+        if SENTRY_AVAILABLE and sentry_sdk:
+            with sentry_sdk.push_scope() as scope:
+                scope.set_level('error')
+                scope.set_tag('request_id', request_id)
+                for key, value in context.items():
+                    scope.set_tag(key, str(value)[:200])
 
-            # Add request data
-            scope.set_context("request", {
-                'method': request.method,
-                'url': request.build_absolute_uri(),
-                'headers': dict(request.headers),
-                'data': self._sanitize_data(request.POST.dict()) if request.POST else None,
-            })
+                # Add request data
+                scope.set_context("request", {
+                    'method': request.method,
+                    'url': request.build_absolute_uri(),
+                    'headers': dict(request.headers),
+                    'data': self._sanitize_data(request.POST.dict()) if request.POST else None,
+                })
 
-            sentry_sdk.capture_exception(exception)
+                sentry_sdk.capture_exception(exception)
 
         # Return appropriate error response
         return self._create_error_response(
@@ -189,6 +200,10 @@ class SentryContextMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
+        # Skip if Sentry is not available
+        if not SENTRY_AVAILABLE or not sentry_sdk:
+            return None
+
         # Set user context in Sentry
         if hasattr(request, 'user') and request.user.is_authenticated:
             sentry_sdk.set_user({
