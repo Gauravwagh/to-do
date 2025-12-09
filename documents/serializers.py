@@ -439,7 +439,18 @@ class CompressionStatsSerializer(serializers.ModelSerializer):
             'failure_count',
             'last_updated',
         ]
-        read_only_fields = '__all__'
+        read_only_fields = [
+            'id',
+            'file_type',
+            'algorithm',
+            'total_files',
+            'avg_compression_ratio',
+            'total_original_size',
+            'total_compressed_size',
+            'avg_compression_time',
+            'failure_count',
+            'last_updated',
+        ]
 
 
 class BulkOperationSerializer(serializers.Serializer):
