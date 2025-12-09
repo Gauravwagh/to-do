@@ -1,0 +1,530 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}My Drive{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Google Drive-like Styles */
+    .drive-container {
+        background: #f8f9fa;
+        min-height: calc(100vh - 80px);
+    }
+
+    .drive-toolbar {
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 12px 24px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .upload-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        background: white;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-bottom: 24px;
+    }
+
+    .upload-area:hover, .upload-area.drag-over {
+        border-color: #4285f4;
+        background: #f0f7ff;
+    }
+
+    .upload-area.drag-over {
+        border-style: solid;
+    }
+
+    /* Storage Quota Bar */
+    .storage-quota {
+        background: white;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .quota-bar {
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .quota-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4285f4 0%, #34a853 100%);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    /* View Toggle */
+    .view-toggle {
+        display: inline-flex;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .view-toggle button {
+        border: none;
+        background: white;
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .view-toggle button:hover {
+        background: #f3f4f6;
+    }
+
+    .view-toggle button.active {
+        background: #4285f4;
+        color: white;
+    }
+
+    /* Grid View */
+    .grid-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+        padding: 24px;
+    }
+
+    .file-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .file-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-color: #4285f4;
+    }
+
+    .file-card .file-icon {
+        width: 100%;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        font-size: 48px;
+    }
+
+    .file-card .file-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #202124;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-bottom: 4px;
+    }
+
+    .file-card .file-meta {
+        font-size: 12px;
+        color: #5f6368;
+    }
+
+    .file-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .file-card:hover .file-actions {
+        opacity: 1;
+    }
+
+    /* List View */
+    .list-view {
+        background: white;
+        border-radius: 8px;
+        margin: 24px;
+    }
+
+    .list-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .list-item:hover {
+        background: #f8f9fa;
+    }
+
+    .list-item .file-icon {
+        font-size: 24px;
+        width: 40px;
+        text-align: center;
+    }
+
+    .list-item .file-name {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 500;
+        padding-left: 12px;
+    }
+
+    .list-item .file-owner,
+    .list-item .file-modified,
+    .list-item .file-size {
+        font-size: 13px;
+        color: #5f6368;
+        width: 150px;
+    }
+
+    /* File Type Icons */
+    .icon-pdf { color: #ea4335; }
+    .icon-doc { color: #4285f4; }
+    .icon-xls { color: #34a853; }
+    .icon-ppt { color: #fbbc04; }
+    .icon-img { color: #9334e6; }
+    .icon-zip { color: #6b7280; }
+    .icon-default { color: #9ca3af; }
+
+    /* Breadcrumbs */
+    .drive-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+
+    .drive-breadcrumb a {
+        color: #202124;
+        text-decoration: none;
+    }
+
+    .drive-breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-separator {
+        color: #9ca3af;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #d1d5db;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+        color: #4b5563;
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        color: #9ca3af;
+    }
+
+    /* Hidden file input */
+    #fileInput {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="drive-container">
+    <!-- Toolbar -->
+    <div class="drive-toolbar">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="drive-breadcrumb">
+                <a href="{% url 'documents:document_list' %}">
+                    <i class="material-icons" style="font-size: 20px; vertical-align: middle;">folder</i>
+                    My Drive
+                </a>
+                {% if current_category %}
+                <span class="breadcrumb-separator">/</span>
+                <span>{{ current_category.name }}</span>
+                {% endif %}
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <!-- View Toggle -->
+                <div class="view-toggle">
+                    <button onclick="setView('grid')" id="gridViewBtn" class="active">
+                        <i class="material-icons" style="font-size: 18px;">apps</i>
+                    </button>
+                    <button onclick="setView('list')" id="listViewBtn">
+                        <i class="material-icons" style="font-size: 18px;">view_list</i>
+                    </button>
+                </div>
+
+                <!-- Upload Button -->
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                    <i class="material-icons me-1" style="font-size: 18px; vertical-align: middle;">cloud_upload</i>
+                    Upload
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid py-4">
+        <!-- Storage Quota -->
+        <div class="storage-quota">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-medium">Storage</span>
+                <span class="text-muted">{{ quota.compressed_used|filesizeformat }} of {{ quota.original_quota|filesizeformat }}</span>
+            </div>
+            <div class="quota-bar">
+                <div class="quota-fill" style="width: {{ usage_percentage }}%"></div>
+            </div>
+            {% if usage_percentage > 80 %}
+            <small class="text-warning">⚠️ You're running out of space</small>
+            {% endif %}
+        </div>
+
+        <!-- Drag & Drop Upload Area -->
+        <div class="upload-area" id="dropZone">
+            <i class="material-icons" style="font-size: 48px; color: #4285f4;">cloud_upload</i>
+            <h5 class="mt-3">Drag and drop files here</h5>
+            <p class="text-muted">or click to browse</p>
+            <input type="file" id="fileInput" multiple>
+        </div>
+
+        <!-- Quick Filters -->
+        <div class="d-flex gap-2 mb-3 px-3">
+            <a href="?filter=all" class="btn btn-sm {% if not current_filter or current_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                All Files
+            </a>
+            <a href="?filter=recent" class="btn btn-sm {% if current_filter == 'recent' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                Recent
+            </a>
+            <a href="?filter=favorites" class="btn btn-sm {% if current_filter == 'favorites' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                <i class="material-icons" style="font-size: 16px; vertical-align: middle;">star</i> Favorites
+            </a>
+            <a href="?filter=pdf" class="btn btn-sm {% if current_filter == 'pdf' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                PDFs
+            </a>
+            <a href="?filter=image" class="btn btn-sm {% if current_filter == 'image' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                Images
+            </a>
+        </div>
+
+        <!-- Grid View -->
+        <div class="grid-view" id="gridView">
+            {% for document in documents %}
+            <div class="file-card" onclick="window.location.href='{% url 'documents:document_detail' document.id %}'">
+                <div class="file-actions">
+                    <button class="btn btn-sm btn-light" onclick="event.stopPropagation(); toggleFavorite('{{ document.id }}')">
+                        <i class="material-icons" style="font-size: 18px;">{% if document.is_favorite %}star{% else %}star_border{% endif %}</i>
+                    </button>
+                </div>
+
+                <div class="file-icon icon-{{ document.file_type }}">
+                    {% if document.file_type == 'pdf' %}
+                        <i class="material-icons">picture_as_pdf</i>
+                    {% elif document.file_type in 'doc,docx' %}
+                        <i class="material-icons">description</i>
+                    {% elif document.file_type in 'xls,xlsx' %}
+                        <i class="material-icons">table_chart</i>
+                    {% elif document.file_type in 'ppt,pptx' %}
+                        <i class="material-icons">slideshow</i>
+                    {% elif document.file_type in 'png,jpg,jpeg,gif' %}
+                        <i class="material-icons">image</i>
+                    {% elif document.file_type == 'zip' %}
+                        <i class="material-icons">folder_zip</i>
+                    {% else %}
+                        <i class="material-icons">insert_drive_file</i>
+                    {% endif %}
+                </div>
+
+                <div class="file-name" title="{{ document.title }}">{{ document.title }}</div>
+                <div class="file-meta">
+                    {{ document.upload_date|naturaltime }} • {{ document.file_size_display }}
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <i class="material-icons">folder_open</i>
+                <h3>No files yet</h3>
+                <p>Drag and drop files or click Upload to get started</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- List View -->
+        <div class="list-view" id="listView" style="display: none;">
+            {% for document in documents %}
+            <div class="list-item" onclick="window.location.href='{% url 'documents:document_detail' document.id %}'">
+                <div class="file-icon icon-{{ document.file_type }}">
+                    {% if document.file_type == 'pdf' %}
+                        <i class="material-icons">picture_as_pdf</i>
+                    {% elif document.file_type in 'doc,docx' %}
+                        <i class="material-icons">description</i>
+                    {% elif document.file_type in 'xls,xlsx' %}
+                        <i class="material-icons">table_chart</i>
+                    {% elif document.file_type in 'ppt,pptx' %}
+                        <i class="material-icons">slideshow</i>
+                    {% elif document.file_type in 'png,jpg,jpeg,gif' %}
+                        <i class="material-icons">image</i>
+                    {% elif document.file_type == 'zip' %}
+                        <i class="material-icons">folder_zip</i>
+                    {% else %}
+                        <i class="material-icons">insert_drive_file</i>
+                    {% endif %}
+                </div>
+                <div class="file-name">
+                    {{ document.title }}
+                    {% if document.is_favorite %}
+                    <i class="material-icons text-warning" style="font-size: 16px; vertical-align: middle;">star</i>
+                    {% endif %}
+                </div>
+                <div class="file-owner">Me</div>
+                <div class="file-modified">{{ document.upload_date|naturaltime }}</div>
+                <div class="file-size">{{ document.file_size_display }}</div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="material-icons">folder_open</i>
+                <h3>No files yet</h3>
+                <p>Drag and drop files or click Upload to get started</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+// View Toggle
+function setView(view) {
+    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
+    const gridBtn = document.getElementById('gridViewBtn');
+    const listBtn = document.getElementById('listViewBtn');
+
+    if (view === 'grid') {
+        gridView.style.display = 'grid';
+        listView.style.display = 'none';
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+        localStorage.setItem('preferredView', 'grid');
+    } else {
+        gridView.style.display = 'none';
+        listView.style.display = 'block';
+        listBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+        localStorage.setItem('preferredView', 'list');
+    }
+}
+
+// Load preferred view from localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    const preferredView = localStorage.getItem('preferredView') || 'grid';
+    setView(preferredView);
+});
+
+// Drag and Drop
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        uploadFiles(files);
+    }
+});
+
+fileInput.addEventListener('change', (e) => {
+    uploadFiles(e.target.files);
+});
+
+// Upload files via API
+function uploadFiles(files) {
+    const formData = new FormData();
+
+    for (let i = 0; i < files.length; i++) {
+        formData.append('file', files[i]);
+    }
+
+    // Show upload progress (you can enhance this with a progress bar)
+    alert(`Uploading ${files.length} file(s)...`);
+
+    fetch('/api/v1/documents/documents/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Upload complete!');
+        location.reload();
+    })
+    .catch(error => {
+        alert('Upload failed: ' + error);
+    });
+}
+
+// Toggle favorite
+function toggleFavorite(documentId) {
+    fetch(`/api/v1/documents/documents/${documentId}/toggle_favorite/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(() => location.reload())
+    .catch(error => console.error('Error:', error));
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
