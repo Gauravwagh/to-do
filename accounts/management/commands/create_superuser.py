@@ -35,22 +35,27 @@ class Command(BaseCommand):
         username = options.get('username') or os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin')
         password = options.get('password') or os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'admin123')
 
-        # Check if superuser already exists
+        # Check if superuser already exists (by email OR username)
+        user = None
         if User.objects.filter(email=email).exists():
             user = User.objects.get(email=email)
+        elif User.objects.filter(username=username).exists():
+            user = User.objects.get(username=username)
+
+        if user:
             self.stdout.write(
-                self.style.WARNING(f'Superuser with email "{email}" already exists')
+                self.style.WARNING(f'Superuser already exists: {user.email}')
             )
-            
-            # Update password and ensure superuser status
+
+            # Update password and ensure superuser status (don't change username/email to avoid conflicts)
             user.set_password(password)
             user.is_staff = True
             user.is_superuser = True
             user.is_active = True
-            user.save()
-            
+            user.save(update_fields=['password', 'is_staff', 'is_superuser', 'is_active'])
+
             self.stdout.write(
-                self.style.SUCCESS(f'Updated superuser: {email}')
+                self.style.SUCCESS(f'Updated superuser: {user.email} (username: {user.username})')
             )
         else:
             # Create new superuser
