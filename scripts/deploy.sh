@@ -1,4 +1,5 @@
 #!/bin/bash
+# Exit on error (except for pip install)
 set -e
 
 echo "=== Evernote Clone Deployment Script ==="
@@ -41,7 +42,12 @@ git pull origin $BRANCH
 # Install/update Python dependencies (skip errors if dependencies already installed)
 echo -e "${YELLOW}Installing Python dependencies...${NC}"
 source venv/bin/activate
-pip install -r requirements/production.txt --quiet || echo -e "${YELLOW}Warning: Some dependencies failed to install, continuing...${NC}"
+set +e  # Temporarily disable exit on error
+pip install -r requirements/production.txt --quiet
+if [ $? -ne 0 ]; then
+    echo -e "${YELLOW}Warning: Some dependencies failed to install, continuing with existing packages...${NC}"
+fi
+set -e  # Re-enable exit on error
 
 # Run database migrations
 echo -e "${YELLOW}Running database migrations...${NC}"
