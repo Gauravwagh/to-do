@@ -183,6 +183,7 @@ async function performBulkMove(documentIds, folderIds, targetFolderId) {
 
         const response = await fetch('/api/v1/documents/documents/bulk_move/', {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCsrfToken()

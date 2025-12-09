@@ -259,6 +259,7 @@ async function toggleStar(documentId) {
     try {
         const response = await fetch(`/api/v1/documents/documents/${documentId}/toggle_favorite/`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'X-CSRFToken': getCsrfToken()
             }
@@ -290,6 +291,7 @@ async function deleteDocument(documentId) {
 
         const response = await fetch(`/api/v1/documents/documents/${documentId}/`, {
             method: 'DELETE',
+            credentials: 'include',
             headers: {
                 'X-CSRFToken': getCsrfToken()
             }

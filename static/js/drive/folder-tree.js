@@ -14,6 +14,7 @@ async function loadFolderTree() {
 
     try {
         const response = await fetch('/api/v1/documents/categories/tree/', {
+            credentials: 'include',
             headers: {
                 'X-CSRFToken': getCsrfToken()
             }
@@ -268,6 +269,7 @@ async function createFolder(name, parentId = null) {
 
         const response = await fetch('/api/v1/documents/categories/', {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCsrfToken()
@@ -312,6 +314,7 @@ async function renameFolder(folderId, newName) {
 
         const response = await fetch(`/api/v1/documents/categories/${folderId}/`, {
             method: 'PATCH',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCsrfToken()
@@ -351,6 +354,7 @@ async function deleteFolder(folderId, folderName) {
 
         const response = await fetch(`/api/v1/documents/categories/${folderId}/`, {
             method: 'DELETE',
+            credentials: 'include',
             headers: {
                 'X-CSRFToken': getCsrfToken()
             }

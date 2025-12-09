@@ -140,6 +140,7 @@ async function performBulkDelete() {
         if (documentIds.length > 0) {
             const response = await fetch('/api/v1/documents/documents/bulk_operations/', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCsrfToken()
@@ -159,6 +160,7 @@ async function performBulkDelete() {
         for (const folderId of folderIds) {
             const response = await fetch(`/api/v1/documents/categories/${folderId}/`, {
                 method: 'DELETE',
+                credentials: 'include',
                 headers: {
                     'X-CSRFToken': getCsrfToken()
                 }
