@@ -12,6 +12,14 @@ DEBUG = False
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
+# CSRF trusted origins for POST requests from frontend
+CSRF_TRUSTED_ORIGINS = [
+    'https://agspace.in',
+    'https://www.agspace.in',
+    'http://46.224.109.101',
+    'https://46.224.109.101',
+]
+
 # Security settings for production
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
