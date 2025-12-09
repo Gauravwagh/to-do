@@ -52,6 +52,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link fw-medium text-dark" href="{% url 'documents:document_list' %}">
+                            <i class="material-icons me-1">folder</i><span class="d-none d-md-inline">Document Library</span><span class="d-inline d-md-none">Docs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         {% if vault_is_initialized %}
                             <a class="nav-link fw-medium text-dark" href="{% url 'vault:dashboard' %}">
                                 {% if vault_is_unlocked %}
