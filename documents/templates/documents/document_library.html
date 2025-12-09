@@ -471,32 +471,64 @@ fileInput.addEventListener('change', (e) => {
     uploadFiles(e.target.files);
 });
 
-// Upload files via API
-function uploadFiles(files) {
-    const formData = new FormData();
+// Upload files via API (one at a time)
+async function uploadFiles(files) {
+    if (files.length === 0) return;
 
+    // Show upload progress
+    const uploadCount = files.length;
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Create a simple progress indicator
+    const progressDiv = document.createElement('div');
+    progressDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 9999;';
+    progressDiv.innerHTML = `<strong>Uploading ${uploadCount} file(s)...</strong><br><span id="upload-progress">0/${uploadCount}</span>`;
+    document.body.appendChild(progressDiv);
+
+    // Upload each file separately
     for (let i = 0; i < files.length; i++) {
-        formData.append('file', files[i]);
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/v1/documents/documents/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (response.ok) {
+                successCount++;
+            } else {
+                errorCount++;
+                const errorData = await response.json();
+                console.error(`Failed to upload ${file.name}:`, errorData);
+            }
+        } catch (error) {
+            errorCount++;
+            console.error(`Error uploading ${file.name}:`, error);
+        }
+
+        // Update progress
+        document.getElementById('upload-progress').textContent = `${i + 1}/${uploadCount}`;
     }
 
-    // Show upload progress (you can enhance this with a progress bar)
-    alert(`Uploading ${files.length} file(s)...`);
+    // Remove progress indicator
+    document.body.removeChild(progressDiv);
 
-    fetch('/api/v1/documents/documents/', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert('Upload complete!');
-        location.reload();
-    })
-    .catch(error => {
-        alert('Upload failed: ' + error);
-    });
+    // Show results
+    if (errorCount === 0) {
+        alert(`Successfully uploaded ${successCount} file(s)!`);
+    } else {
+        alert(`Uploaded ${successCount} file(s). ${errorCount} failed.`);
+    }
+
+    // Reload page to show new files
+    location.reload();
 }
 
 // Toggle favorite
