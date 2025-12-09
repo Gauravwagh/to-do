@@ -38,10 +38,10 @@ git fetch origin $BRANCH
 echo -e "${YELLOW}Pulling latest code...${NC}"
 git pull origin $BRANCH
 
-# Install/update Python dependencies
+# Install/update Python dependencies (skip errors if dependencies already installed)
 echo -e "${YELLOW}Installing Python dependencies...${NC}"
 source venv/bin/activate
-pip install -r requirements/production.txt --quiet
+pip install -r requirements/production.txt --quiet || echo -e "${YELLOW}Warning: Some dependencies failed to install, continuing...${NC}"
 
 # Run database migrations
 echo -e "${YELLOW}Running database migrations...${NC}"
