@@ -446,13 +446,14 @@ JAZZMIN_SETTINGS = {
     'topmenu_links': [
         {'name': 'Home', 'url': 'admin:index', 'permissions': ['auth.view_user']},
         {'name': 'Dashboard', 'url': 'notes:dashboard', 'permissions': ['auth.view_user']},
-        {'name': 'Documents', 'url': 'documents:document_list', 'permissions': ['auth.view_user']},
+        {'name': 'Document Library', 'url': 'documents:document_list', 'permissions': ['auth.view_user'], 'icon': 'fas fa-folder-open'},
         {'model': 'auth.User'},
     ],
 
     # User menu items (dropdown)
     'usermenu_links': [
         {'name': 'Dashboard', 'url': 'notes:dashboard', 'icon': 'fas fa-home'},
+        {'name': 'Document Library', 'url': 'documents:document_list', 'icon': 'fas fa-folder-open'},
         {'model': 'auth.user'},
     ],
 
@@ -461,6 +462,31 @@ JAZZMIN_SETTINGS = {
     'navigation_expanded': True,
     'hide_apps': [],
     'hide_models': [],
+
+    # Custom links in sidebar
+    'custom_links': {
+        'documents': [{
+            'name': 'Document Library Dashboard',
+            'url': 'documents:document_list',
+            'icon': 'fas fa-home',
+            'permissions': ['documents.view_document']
+        }, {
+            'name': 'Upload Document',
+            'url': 'documents:document_upload',
+            'icon': 'fas fa-upload',
+            'permissions': ['documents.add_document']
+        }, {
+            'name': 'Categories',
+            'url': 'documents:category_list',
+            'icon': 'fas fa-folder-tree',
+            'permissions': ['documents.view_category']
+        }, {
+            'name': 'Statistics',
+            'url': 'documents:stats_dashboard',
+            'icon': 'fas fa-chart-line',
+            'permissions': ['documents.view_compressionstats']
+        }]
+    },
 
     # Custom ordering for apps and models
     'order_with_respect_to': [
@@ -478,13 +504,16 @@ JAZZMIN_SETTINGS = {
         'auth.user': 'fas fa-user',
         'auth.Group': 'fas fa-users',
 
+        'accounts': 'fas fa-user-circle',
         'accounts.User': 'fas fa-user-circle',
 
+        'notes': 'fas fa-sticky-note',
         'notes.Note': 'fas fa-sticky-note',
         'notes.Notebook': 'fas fa-book',
         'notes.Tag': 'fas fa-tag',
         'notes.Todo': 'fas fa-check-square',
 
+        'documents': 'fas fa-folder-open',
         'documents.Document': 'fas fa-file-alt',
         'documents.Category': 'fas fa-folder',
         'documents.Tag': 'fas fa-tags',
@@ -494,6 +523,7 @@ JAZZMIN_SETTINGS = {
         'documents.DocumentBackup': 'fas fa-archive',
         'documents.CompressionStats': 'fas fa-chart-bar',
 
+        'vault': 'fas fa-vault',
         'vault.VaultConfig': 'fas fa-lock',
         'vault.VaultItem': 'fas fa-key',
         'vault.VaultFile': 'fas fa-file-shield',
