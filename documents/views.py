@@ -54,73 +54,10 @@ def dashboard(request):
 @login_required
 def document_list(request):
     """
-    List all documents with filtering and pagination - Google Drive style UI.
+    Redirect to the unified drive view.
+    This maintains backward compatibility with old /documents/list/ URLs.
     """
-    documents = Document.objects.filter(user=request.user).select_related('category').prefetch_related('tags')
-
-    # Apply filters
-    filter_type = request.GET.get('filter', 'all')
-
-    if filter_type == 'recent':
-        documents = documents.order_by('-upload_date')[:20]
-    elif filter_type == 'favorites':
-        documents = documents.filter(is_favorite=True)
-    elif filter_type == 'pdf':
-        documents = documents.filter(file_type='pdf')
-    elif filter_type == 'image':
-        documents = documents.filter(file_type__in=['image', 'jpg', 'jpeg', 'png', 'gif'])
-
-    # Category filter
-    category_id = request.GET.get('category')
-    if category_id:
-        documents = documents.filter(category_id=category_id)
-
-    # File type filter
-    file_type = request.GET.get('file_type')
-    if file_type:
-        documents = documents.filter(file_type=file_type)
-
-    # Favorite filter
-    is_favorite = request.GET.get('is_favorite')
-    if is_favorite == 'true':
-        documents = documents.filter(is_favorite=True)
-
-    # Search filter
-    search = request.GET.get('search')
-    if search:
-        documents = documents.filter(title__icontains=search)
-
-    # Ordering
-    order_by = request.GET.get('order_by', '-upload_date')
-    if filter_type != 'recent':  # Don't re-order if already showing recent
-        documents = documents.order_by(order_by)
-
-    # Get storage quota with usage percentage
-    quota, created = UserStorageQuota.objects.get_or_create(user=request.user)
-
-    # Calculate usage percentage for progress bar
-    if hasattr(quota, 'original_used_percentage'):
-        usage_percentage = quota.original_used_percentage
-    else:
-        usage_percentage = (quota.original_used / quota.original_quota * 100) if quota.original_quota > 0 else 0
-
-    # Get categories for folder structure
-    categories = DocumentCategory.objects.filter(user=request.user).annotate(
-        doc_count=Count('documents')
-    )
-
-    context = {
-        'documents': documents,
-        'categories': categories,
-        'quota': quota,
-        'usage_percentage': usage_percentage,
-        'current_category': category_id,
-        'current_file_type': file_type,
-        'current_filter': filter_type,
-        'search_query': search,
-    }
-
-    return render(request, 'documents/document_library.html', context)
+    return redirect('documents:drive')
 
 
 @login_required
