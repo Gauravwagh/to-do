@@ -547,8 +547,8 @@ class FolderTreeSerializer(serializers.ModelSerializer):
     """Serializer for folder tree structure with nested children"""
 
     children = serializers.SerializerMethodField()
-    document_count = serializers.IntegerField(read_only=True)
-    subfolder_count = serializers.IntegerField(read_only=True)
+    document_count = serializers.SerializerMethodField()
+    subfolder_count = serializers.SerializerMethodField()
 
     class Meta:
         model = DocumentCategory
@@ -568,6 +568,14 @@ class FolderTreeSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'path', 'depth', 'created_at']
 
+    def get_document_count(self, obj):
+        """Get count of documents in this folder"""
+        return obj.document_count
+
+    def get_subfolder_count(self, obj):
+        """Get count of subfolders in this folder"""
+        return obj.subfolder_count
+
     def get_children(self, obj):
         """Get nested children folders"""
         # Check if we should expand all levels or just direct children
@@ -575,12 +583,8 @@ class FolderTreeSerializer(serializers.ModelSerializer):
         expand_all = request and request.query_params.get('expand') == 'true'
 
         if expand_all or not hasattr(obj, '_no_recursion'):
-            # Annotate subfolders with counts
-            from django.db.models import Count
-            subfolders = obj.subfolders.annotate(
-                document_count=Count('documents'),
-                subfolder_count=Count('subfolders')
-            )
+            # Get subfolders without annotations (use model properties instead)
+            subfolders = obj.subfolders.all()
             # Recursively serialize children
             return FolderTreeSerializer(
                 subfolders,

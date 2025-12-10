@@ -85,9 +85,8 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
           - expand=true: Expand all nested levels
         """
         # Get root folders (those without a parent)
-        root_folders = self.get_queryset().filter(parent=None).annotate(
-            subfolder_count=Count('subfolders')
-        )
+        # No need to annotate - serializer uses model properties
+        root_folders = self.get_queryset().filter(parent=None)
 
         serializer = FolderTreeSerializer(
             root_folders,
