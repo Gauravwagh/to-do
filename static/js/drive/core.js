@@ -254,7 +254,8 @@ function confirmAction(message, callback) {
  * Show custom delete confirmation modal
  */
 function showDeleteConfirmation(message, onConfirm) {
-    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    const modalEl = document.getElementById('deleteConfirmModal');
+    const modal = new bootstrap.Modal(modalEl);
     const confirmBtn = document.getElementById('confirmDeleteBtn');
     const messageEl = document.getElementById('deleteConfirmMessage');
 
@@ -269,6 +270,11 @@ function showDeleteConfirmation(message, onConfirm) {
         modal.hide();
         onConfirm();
     });
+
+    // Fix aria-hidden issue - remove it when modal is shown
+    modalEl.addEventListener('shown.bs.modal', function() {
+        modalEl.removeAttribute('aria-hidden');
+    }, { once: true });
 
     modal.show();
 }

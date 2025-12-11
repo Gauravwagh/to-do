@@ -188,6 +188,50 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
             'folder': DocumentCategorySerializer(folder).data
         })
 
+    def destroy(self, request, *args, **kwargs):
+        """
+        Delete a folder and all its subfolders.
+        This will also uncategorize any documents in the folder and subfolders.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            folder = self.get_object()
+            folder_name = folder.name
+            folder_id = folder.id
+
+            logger.info(f"Attempting to delete folder: {folder_name} (ID: {folder_id})")
+
+            # Get all descendant folders (including self)
+            def get_all_descendants(category):
+                descendants = [category]
+                for child in category.subfolders.all():
+                    descendants.extend(get_all_descendants(child))
+                return descendants
+
+            all_folders = get_all_descendants(folder)
+            folder_ids = [f.id for f in all_folders]
+
+            logger.info(f"Deleting {len(all_folders)} folders (including descendants)")
+
+            # Un categorize all documents in these folders
+            Document.objects.filter(category__id__in=folder_ids).update(category=None)
+
+            # Delete the folder (CASCADE will delete all descendant folders)
+            folder.delete()
+
+            logger.info(f"Successfully deleted folder: {folder_name}")
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except Exception as e:
+            logger.error(f"Error deleting folder: {str(e)}", exc_info=True)
+            return Response(
+                {'error': f'Failed to delete folder: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 class DocumentTagViewSet(viewsets.ModelViewSet):
     """
