@@ -34,7 +34,13 @@
       "Bash(curl -I http://46.224.109.101)",
       "Bash(curl -s http://46.224.109.101)",
       "Bash(curl:*)",
-      "Bash(dig:*)"
+      "Bash(dig:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(pkill:*)",
+      "Bash(./deploy_to_production.sh)",
+      "Bash(node -c:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

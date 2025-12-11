@@ -564,6 +564,15 @@
     .empty-state p {
         color: #9ca3af;
     }
+
+    /* Modal backdrop - darker like Google Drive */
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.6) !important;
+    }
+
+    .modal-backdrop.show {
+        opacity: 1 !important;
+    }
 </style>
 {% endblock %}
 
@@ -818,9 +827,9 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content" style="min-width: 400px;">
             <div class="modal-header border-0">
                 <h5 class="modal-title" id="deleteConfirmTitle">Confirm Delete</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -836,11 +845,58 @@
     </div>
 </div>
 
+<!-- New Folder Modal -->
+<div class="modal fade" id="newFolderInsideModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="min-width: 450px;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">New Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label for="newFolderNameInput" class="form-label">Enter folder name:</label>
+                <input type="text" class="form-control" id="newFolderNameInput" placeholder="Folder name" autofocus>
+                <input type="hidden" id="newFolderParentId">
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="createFolderBtn">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Move Modal with improved UI -->
+<div class="modal fade" id="moveModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="min-width: 500px;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Move "<span id="moveItemName"></span>"</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Select destination:</p>
+                <div id="moveFolderTree" style="max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px;">
+                    <!-- Folder tree will be loaded here -->
+                </div>
+                <input type="hidden" id="moveItemType">
+                <input type="hidden" id="moveItemId">
+                <input type="hidden" id="moveTargetFolderId">
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmMoveBtn">Move</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modals -->
 {% include 'documents/partials/modals.html' %}
 
 <!-- JavaScript -->
 <script src="{% static 'js/drive/core.js' %}"></script>
+<script src="{% static 'js/drive/folder-tree.js' %}"></script>
 <script src="{% static 'js/drive/context-menu.js' %}"></script>
 <script src="{% static 'js/drive/selection.js' %}"></script>
 <script src="{% static 'js/drive/drag-drop.js' %}"></script>

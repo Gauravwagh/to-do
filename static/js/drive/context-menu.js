@@ -83,7 +83,7 @@ function buildContextMenuItems(itemType, itemId) {
             {
                 icon: 'delete',
                 label: 'Delete',
-                action: `deleteFolder('${itemId}', '${contextMenuTarget.name}')`,
+                action: `deleteFolder('${itemId}', contextMenuTarget.name)`,
                 danger: true
             }
         ];
@@ -196,13 +196,20 @@ function promptRenameFolder(folderId) {
 }
 
 /**
- * Prompt create folder inside
+ * Show new folder modal for creating folder inside
  */
 function promptCreateFolderInside(parentId) {
-    const name = prompt('Enter folder name:');
-    if (name && name.trim()) {
-        createFolder(name.trim(), parentId);
-    }
+    const modal = new bootstrap.Modal(document.getElementById('newFolderInsideModal'));
+    const input = document.getElementById('newFolderNameInput');
+    const parentIdInput = document.getElementById('newFolderParentId');
+
+    input.value = '';
+    parentIdInput.value = parentId;
+
+    modal.show();
+
+    // Focus input after modal is shown
+    setTimeout(() => input.focus(), 300);
 }
 
 /**
@@ -222,22 +229,104 @@ function showUploadModal() {
 }
 
 /**
- * Show move dialog
+ * Show move dialog with improved UI
  */
-function showMoveDialog(itemType, itemId) {
+async function showMoveDialog(itemType, itemId) {
     // Set values in move modal
     document.getElementById('moveItemType').value = itemType;
     document.getElementById('moveItemId').value = itemId;
     document.getElementById('moveItemName').textContent = contextMenuTarget.name;
+    document.getElementById('moveTargetFolderId').value = '';
 
-    // Clear previous selection
-    document.querySelectorAll('.folder-tree-item').forEach(el => {
-        el.classList.remove('selected');
-    });
+    // Load folder tree
+    const treeContainer = document.getElementById('moveFolderTree');
+    treeContainer.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm" role="status"></div></div>';
+
+    try {
+        const response = await fetch('/api/v1/documents/categories/tree/', {
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load folders');
+        }
+
+        const folders = await response.json();
+
+        // Render folder tree with selection
+        treeContainer.innerHTML = '';
+
+        // Add "My Drive" (root) option
+        const rootOption = document.createElement('div');
+        rootOption.className = 'move-folder-option';
+        rootOption.innerHTML = `
+            <div class="d-flex align-items-center gap-2 p-2" style="cursor: pointer; border-radius: 4px;">
+                <i class="material-icons">home</i>
+                <span>My Drive</span>
+            </div>
+        `;
+        rootOption.onclick = () => selectMoveTarget(rootOption, 'root');
+        treeContainer.appendChild(rootOption);
+
+        // Render folders recursively
+        renderMoveFolderTree(folders, treeContainer, itemId, itemType);
+
+    } catch (error) {
+        console.error('Error loading folders:', error);
+        treeContainer.innerHTML = '<div class="text-danger text-center py-3">Failed to load folders</div>';
+    }
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('moveModal'));
     modal.show();
+}
+
+/**
+ * Render folder tree for move dialog
+ */
+function renderMoveFolderTree(folders, container, excludeId, itemType, depth = 0) {
+    folders.forEach(folder => {
+        // Don't show the folder we're moving or its children
+        if (folder.id === excludeId) {
+            return;
+        }
+
+        const folderOption = document.createElement('div');
+        folderOption.className = 'move-folder-option';
+        folderOption.style.paddingLeft = `${depth * 20}px`;
+        folderOption.innerHTML = `
+            <div class="d-flex align-items-center gap-2 p-2" style="cursor: pointer; border-radius: 4px;">
+                <i class="material-icons" style="color: ${folder.color || '#fbbf24'};">folder</i>
+                <span>${folder.name}</span>
+            </div>
+        `;
+        folderOption.onclick = () => selectMoveTarget(folderOption, folder.id);
+        container.appendChild(folderOption);
+
+        // Render children
+        if (folder.children && folder.children.length > 0) {
+            renderMoveFolderTree(folder.children, container, excludeId, itemType, depth + 1);
+        }
+    });
+}
+
+/**
+ * Select target folder for move
+ */
+function selectMoveTarget(element, folderId) {
+    // Remove previous selection
+    document.querySelectorAll('.move-folder-option').forEach(el => {
+        el.querySelector('div').style.background = '';
+    });
+
+    // Highlight selected
+    element.querySelector('div').style.background = '#e8f0fe';
+
+    // Store selection
+    document.getElementById('moveTargetFolderId').value = folderId;
 }
 
 /**
@@ -396,4 +485,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setupLongPress(card, itemType, itemId, itemName);
     });
+
+    // Event listener for "Create Folder" button in new folder modal
+    const createFolderBtn = document.getElementById('createFolderBtn');
+    if (createFolderBtn) {
+        createFolderBtn.addEventListener('click', () => {
+            const input = document.getElementById('newFolderNameInput');
+            const parentId = document.getElementById('newFolderParentId').value;
+            const name = input.value.trim();
+
+            if (name) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('newFolderInsideModal'));
+                modal.hide();
+                createFolder(name, parentId || null);
+            }
+        });
+    }
+
+    // Allow Enter key to submit in new folder modal
+    const newFolderInput = document.getElementById('newFolderNameInput');
+    if (newFolderInput) {
+        newFolderInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('createFolderBtn').click();
+            }
+        });
+    }
+
+    // Event listener for "Move" button in move modal
+    const confirmMoveBtn = document.getElementById('confirmMoveBtn');
+    if (confirmMoveBtn) {
+        confirmMoveBtn.addEventListener('click', async () => {
+            const itemType = document.getElementById('moveItemType').value;
+            const itemId = document.getElementById('moveItemId').value;
+            const targetFolderId = document.getElementById('moveTargetFolderId').value;
+
+            if (!targetFolderId) {
+                showToast('Please select a destination folder', 'warning');
+                return;
+            }
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('moveModal'));
+            modal.hide();
+
+            try {
+                showLoading();
+
+                const url = itemType === 'folder'
+                    ? `/api/v1/documents/categories/${itemId}/move/`
+                    : `/api/v1/documents/documents/${itemId}/`;
+
+                const method = itemType === 'folder' ? 'POST' : 'PATCH';
+                const body = itemType === 'folder'
+                    ? { parent: targetFolderId === 'root' ? null : targetFolderId }
+                    : { category: targetFolderId === 'root' ? null : targetFolderId };
+
+                const response = await fetch(url, {
+                    method: method,
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to move item');
+                }
+
+                showToast('Item moved successfully!', 'success');
+                setTimeout(() => window.location.reload(), 500);
+
+            } catch (error) {
+                console.error('Error moving item:', error);
+                showToast('Error: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        });
+    }
 });
