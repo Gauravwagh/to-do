@@ -231,7 +231,7 @@
             </div>
             <div class="modal-body">
                 <p class="text-muted">Generate a secure link to share this document</p>
-                <form method="post" action="{% url 'documents:generate_share_link' document.id %}">
+                <form method="post" action="#">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label class="form-label">Expiration (optional)</label>
