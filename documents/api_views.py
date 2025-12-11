@@ -197,34 +197,45 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
         logger = logging.getLogger(__name__)
 
         try:
-            folder = self.get_object()
+            # Get folder ID first (from annotated queryset)
+            folder_obj = self.get_object()
+            folder_id = folder_obj.id
+
+            # Fetch clean instance without annotations to avoid property setter issues
+            folder = DocumentCategory.objects.get(id=folder_id, user=request.user)
             folder_name = folder.name
-            folder_id = folder.id
 
             logger.info(f"Attempting to delete folder: {folder_name} (ID: {folder_id})")
 
-            # Get all descendant folders (including self)
-            def get_all_descendants(category):
-                descendants = [category]
-                for child in category.subfolders.all():
-                    descendants.extend(get_all_descendants(child))
-                return descendants
+            # Get all descendant folder IDs using a simple recursive query
+            def get_descendant_ids(category_id):
+                """Get all descendant folder IDs recursively"""
+                ids = [category_id]
+                children = DocumentCategory.objects.filter(parent_id=category_id).values_list('id', flat=True)
+                for child_id in children:
+                    ids.extend(get_descendant_ids(child_id))
+                return ids
 
-            all_folders = get_all_descendants(folder)
-            folder_ids = [f.id for f in all_folders]
+            all_folder_ids = get_descendant_ids(folder_id)
 
-            logger.info(f"Deleting {len(all_folders)} folders (including descendants)")
+            logger.info(f"Deleting {len(all_folder_ids)} folders (including descendants)")
 
-            # Un categorize all documents in these folders
-            Document.objects.filter(category__id__in=folder_ids).update(category=None)
+            # Uncategorize all documents in these folders
+            Document.objects.filter(category_id__in=all_folder_ids).update(category=None)
 
             # Delete the folder (CASCADE will delete all descendant folders)
+            # Use the clean instance
             folder.delete()
 
             logger.info(f"Successfully deleted folder: {folder_name}")
 
             return Response(status=status.HTTP_204_NO_CONTENT)
 
+        except DocumentCategory.DoesNotExist:
+            return Response(
+                {'error': 'Folder not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
             logger.error(f"Error deleting folder: {str(e)}", exc_info=True)
             return Response(
