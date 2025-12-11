@@ -1,353 +1,611 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}{{ document.title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* ======================
+       LAYOUT
+       ====================== */
+    .drive-layout {
+        display: flex;
+        height: calc(100vh - 80px);
+        background: #f8f9fa;
+    }
+
+    /* ======================
+       SIDEBAR
+       ====================== */
+    .drive-sidebar {
+        width: 256px;
+        background: white;
+        border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar-header {
+        padding: 20px 16px 12px;
+    }
+
+    .sidebar-header .btn-new {
+        background: white;
+        border: 1px solid #dadce0;
+        border-radius: 24px;
+        padding: 8px 20px 8px 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #202124;
+        box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+        transition: all 0.2s;
+    }
+
+    .sidebar-header .btn-new:hover {
+        background: #fafafb;
+        box-shadow: 0 1px 3px 0 rgba(60,64,67,.3), 0 4px 8px 3px rgba(60,64,67,.15);
+    }
+
+    .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    .nav-item {
+        padding: 8px 12px 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+        user-select: none;
+        color: #5f6368;
+        text-decoration: none;
+        font-size: 14px;
+        border-radius: 0 24px 24px 0;
+        margin: 2px 4px 2px 8px;
+    }
+
+    .nav-item:hover {
+        background: #f1f3f4;
+        color: #202124;
+    }
+
+    .nav-item.active {
+        background: #e8f0fe;
+        color: #1967d2;
+        font-weight: 500;
+    }
+
+    .nav-item i {
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .nav-item-text {
+        flex: 1;
+    }
+
+    .nav-divider {
+        height: 1px;
+        background: #e0e0e0;
+        margin: 8px 16px;
+    }
+
+    .quota-progress {
+        height: 6px;
+        background: #e0e0e0;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .quota-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4285f4 0%, #34a853 100%);
+        transition: width 0.3s;
+    }
+
+    /* ======================
+       MAIN CONTENT
+       ====================== */
+    .drive-main {
+        flex: 1;
+        overflow-y: auto;
+        background: #f8f9fa;
+    }
+
+    .detail-container {
+        padding: 32px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* ======================
+       RESPONSIVE
+       ====================== */
+    .hamburger-btn {
+        display: none;
+        background: none;
+        border: none;
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+
+    .hamburger-btn:hover {
+        background: #f1f3f4;
+    }
+
+    @media (max-width: 991px) {
+        .drive-sidebar {
+            position: fixed;
+            left: -256px;
+            top: 80px;
+            height: calc(100vh - 80px);
+            z-index: 1001;
+        }
+
+        .drive-sidebar.open {
+            transform: translateX(256px);
+        }
+
+        .hamburger-btn {
+            display: block;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .detail-container {
+            padding: 20px 16px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'documents:dashboard' %}">Documents</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'documents:document_list' %}">All Documents</a></li>
-                    <li class="breadcrumb-item active">{{ document.title }}</li>
-                </ol>
-            </nav>
-            <h1>
-                {% if document.is_favorite %}
-                <i class="fas fa-star text-warning"></i>
-                {% endif %}
-                {{ document.title }}
-            </h1>
-            {% if document.description %}
-            <p class="text-muted">{{ document.description }}</p>
-            {% endif %}
+<!-- Sidebar Overlay (Mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="drive-layout">
+    <!-- LEFT SIDEBAR -->
+    <aside class="drive-sidebar" id="driveSidebar">
+        <!-- Sidebar Header -->
+        <div class="sidebar-header">
+            <button class="btn-new" onclick="window.location.href='{% url 'documents:drive' %}'">
+                <i class="material-icons" style="font-size: 24px;">arrow_back</i>
+                <span>My Drive</span>
+            </button>
         </div>
-        <div class="col-md-4 text-end">
-            <div class="btn-group" role="group">
-                <a href="{% url 'documents:document_download' document.id %}" class="btn btn-primary">
-                    <i class="fas fa-download"></i> Download
-                </a>
-                <a href="{% url 'documents:document_edit' document.id %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <a href="{% url 'documents:document_delete' document.id %}" class="btn btn-outline-danger">
-                    <i class="fas fa-trash"></i> Delete
-                </a>
+
+        <!-- Navigation -->
+        <div class="sidebar-content">
+            <a href="{% url 'documents:drive' %}" class="nav-item">
+                <i class="material-icons">home</i>
+                <span class="nav-item-text">Home</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="material-icons">people</i>
+                <span class="nav-item-text">Shared with me</span>
+            </a>
+            <a href="{% url 'documents:document_list' %}?filter=recent" class="nav-item">
+                <i class="material-icons">schedule</i>
+                <span class="nav-item-text">Recent</span>
+            </a>
+            <a href="{% url 'documents:document_list' %}?is_favorite=true" class="nav-item">
+                <i class="material-icons">star</i>
+                <span class="nav-item-text">Starred</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="material-icons">delete</i>
+                <span class="nav-item-text">Trash</span>
+            </a>
+
+            <div class="nav-divider"></div>
+
+            <div class="nav-item" style="flex-direction: column; align-items: flex-start; gap: 8px; cursor: default;">
+                <div style="display: flex; align-items: center; gap: 16px; width: 100%;">
+                    <i class="material-icons">cloud</i>
+                    <span class="nav-item-text">Storage</span>
+                </div>
+                <div class="storage-info" style="width: 100%; padding-left: 36px;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span style="font-size: 12px;">Usage</span>
+                    </div>
+                    <div class="quota-progress">
+                        <div class="quota-fill" style="width: 15%"></div>
+                    </div>
+                    <div class="mt-1" style="font-size: 11px; color: #5f6368;">
+                        {{ document.original_file_size|filesizeformat }} used
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </aside>
 
-    <div class="row">
-        <!-- Left Column - Main Info -->
-        <div class="col-lg-8">
-            <!-- Preview Card -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-eye"></i> Preview</h5>
-                </div>
-                <div class="card-body text-center">
-                    {% if document.file_type in 'png,jpg,jpeg,gif' %}
-                    <!-- Image Preview -->
-                    <img src="{{ document.file.url }}" alt="{{ document.title }}" class="img-fluid" style="max-height: 500px;">
-                    {% elif document.file_type == 'pdf' %}
-                    <!-- PDF Preview -->
-                    <iframe src="{{ document.file.url }}" width="100%" height="600px" style="border: 1px solid #ddd;">
-                        Your browser does not support PDF preview.
-                    </iframe>
-                    {% elif document.file_type == 'txt' %}
-                    <!-- Text Preview -->
-                    <div class="text-start bg-light p-3" style="max-height: 500px; overflow-y: auto;">
-                        <pre>{{ document.file.read|truncatewords:500 }}</pre>
-                    </div>
-                    {% else %}
-                    <!-- Generic File Icon -->
-                    <div class="py-5">
-                        <i class="fas fa-file-{{ document.file_type }} fa-5x text-muted mb-3"></i>
-                        <p class="text-muted">Preview not available for this file type</p>
-                        <a href="{% url 'documents:document_download' document.id %}" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Download to View
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+    <!-- MAIN CONTENT -->
+    <main class="drive-main">
+        <div class="detail-container">
+            <!-- Header -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <!-- Hamburger (Mobile) -->
+                        <button class="hamburger-btn" onclick="toggleSidebar()">
+                            <i class="material-icons">menu</i>
+                        </button>
 
-            <!-- File Metadata -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> File Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <dl class="row">
-                                <dt class="col-sm-5">Original Name:</dt>
-                                <dd class="col-sm-7">{{ document.file_original_name }}</dd>
-
-                                <dt class="col-sm-5">File Type:</dt>
-                                <dd class="col-sm-7">
-                                    <span class="badge bg-secondary">{{ document.get_file_type_display }}</span>
-                                </dd>
-
-                                <dt class="col-sm-5">Original Size:</dt>
-                                <dd class="col-sm-7">{{ document.original_file_size|filesizeformat }}</dd>
-
-                                <dt class="col-sm-5">Current Size:</dt>
-                                <dd class="col-sm-7">{{ document.file_size_display }}</dd>
-                            </dl>
-                        </div>
-                        <div class="col-md-6">
-                            <dl class="row">
-                                <dt class="col-sm-5">Uploaded:</dt>
-                                <dd class="col-sm-7">{{ document.upload_date|date:"M d, Y H:i" }}</dd>
-
-                                <dt class="col-sm-5">Last Modified:</dt>
-                                <dd class="col-sm-7">{{ document.last_modified|naturaltime }}</dd>
-
-                                <dt class="col-sm-5">Last Accessed:</dt>
-                                <dd class="col-sm-7">
-                                    {% if document.last_accessed %}
-                                    {{ document.last_accessed|naturaltime }}
-                                    {% else %}
-                                    <span class="text-muted">Never</span>
-                                    {% endif %}
-                                </dd>
-
-                                <dt class="col-sm-5">Downloads:</dt>
-                                <dd class="col-sm-7">{{ document.download_count }}</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Compression Info -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-compress"></i> Compression Details</h5>
-                </div>
-                <div class="card-body">
-                    {% if document.is_compressed %}
-                    <div class="row">
-                        <div class="col-md-3 text-center">
-                            <h3 class="text-success">{{ document.compression_ratio_percentage }}%</h3>
-                            <small class="text-muted">Compression Ratio</small>
-                        </div>
-                        <div class="col-md-3 text-center">
-                            <h3 class="text-success">{{ document.compression_savings|filesizeformat }}</h3>
-                            <small class="text-muted">Space Saved</small>
-                        </div>
-                        <div class="col-md-3 text-center">
-                            <h3>{{ document.compression_algorithm|upper }}</h3>
-                            <small class="text-muted">Algorithm</small>
-                        </div>
-                        <div class="col-md-3 text-center">
-                            <h3>
-                                {% if document.compression_timestamp %}
-                                {{ document.compression_timestamp|timesince }}
+                        <nav aria-label="breadcrumb" class="flex-grow-1">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a href="{% url 'documents:drive' %}">My Drive</a></li>
+                                {% if document.category %}
+                                <li class="breadcrumb-item"><a href="{% url 'documents:drive_folder' folder_id=document.category.id %}">{{ document.category.name }}</a></li>
+                                {% else %}
+                                <li class="breadcrumb-item"><a href="{% url 'documents:drive' %}">All Documents</a></li>
                                 {% endif %}
-                            </h3>
-                            <small class="text-muted">Compressed</small>
-                        </div>
+                                <li class="breadcrumb-item active">{{ document.title }}</li>
+                            </ol>
+                        </nav>
                     </div>
-                    <hr>
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <p class="mb-1"><strong>Status:</strong>
-                                <span class="badge bg-success">{{ document.get_compression_status_display }}</span>
-                            </p>
-                            <p class="mb-1"><strong>Checksum (Original):</strong>
-                                <code class="small">{{ document.original_file_checksum }}</code>
-                            </p>
-                            <p class="mb-0"><strong>Checksum (Compressed):</strong>
-                                <code class="small">{{ document.compressed_file_checksum }}</code>
-                            </p>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        {% if document.compression_status == 'pending' %}
-                        This document is queued for compression.
-                        {% elif document.compression_status == 'compressing' %}
-                        This document is currently being compressed...
-                        {% elif document.compression_status == 'failed' %}
-                        Compression failed for this document.
-                        {% else %}
-                        This document is not compressed.
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
 
-            <!-- Share History -->
-            {% if share_logs %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-share-alt"></i> Share History</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Method</th>
-                                    <th>Recipient</th>
-                                    <th>Shared</th>
-                                    <th>Status</th>
-                                    <th>Accesses</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for log in share_logs %}
-                                <tr>
-                                    <td>
-                                        <span class="badge bg-primary">
-                                            <i class="fas fa-{% if log.share_method == 'email' %}envelope{% elif log.share_method == 'whatsapp' %}whatsapp{% else %}link{% endif %}"></i>
-                                            {{ log.get_share_method_display }}
-                                        </span>
-                                    </td>
-                                    <td>{{ log.recipient }}</td>
-                                    <td>{{ log.shared_at|naturaltime }}</td>
-                                    <td>
-                                        <span class="badge bg-{% if log.status == 'delivered' %}success{% elif log.status == 'failed' %}danger{% else %}secondary{% endif %}">
-                                            {{ log.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>{{ log.access_count }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Right Column - Actions & Organization -->
-        <div class="col-lg-4">
-            <!-- Quick Actions -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-warning"
-                                hx-post="{% url 'documents:toggle_favorite' document.id %}"
-                                hx-target="#favorite-status"
-                                hx-swap="outerHTML">
-                            <i class="fas fa-star"></i>
-                            {% if document.is_favorite %}Remove from{% else %}Add to{% endif %} Favorites
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#shareModal">
-                            <i class="fas fa-share-alt"></i> Share Document
-                        </button>
-                        <a href="{% url 'documents:document_preview' document.id %}" class="btn btn-outline-info">
-                            <i class="fas fa-eye"></i> Full Preview
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Organization -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-tags"></i> Organization</h5>
-                </div>
-                <div class="card-body">
-                    <h6>Category</h6>
-                    {% if document.category %}
-                    <span class="badge mb-3" style="background-color: {{ document.category.color }};">
-                        <i class="fas fa-{{ document.category.icon }}"></i>
-                        {{ document.category.name }}
-                    </span>
-                    {% else %}
-                    <p class="text-muted mb-3">No category assigned</p>
-                    {% endif %}
-
-                    <h6>Tags</h6>
-                    {% if document.tags.all %}
-                    <div class="mb-3">
-                        {% for tag in document.tags.all %}
-                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted mb-3">No tags</p>
-                    {% endif %}
-
-                    <div id="favorite-status">
-                        <h6>Status</h6>
-                        <p>
-                            {% if document.is_favorite %}
-                            <i class="fas fa-star text-warning"></i> Favorite
-                            {% else %}
-                            <i class="far fa-star text-muted"></i> Not a favorite
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h1 class="h3">
+                                {% if document.is_favorite %}
+                                <i class="fas fa-star text-warning"></i>
+                                {% endif %}
+                                {{ document.title }}
+                            </h1>
+                            {% if document.description %}
+                            <p class="text-muted">{{ document.description }}</p>
                             {% endif %}
-                        </p>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'documents:document_download' document.id %}" class="btn btn-primary">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                            <a href="{% url 'documents:document_edit' document.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="{% url 'documents:document_delete' document.id %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash"></i> Delete
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Statistics -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Statistics</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-6">Views:</dt>
-                        <dd class="col-6">{{ document.view_count }}</dd>
-
-                        <dt class="col-6">Downloads:</dt>
-                        <dd class="col-6">{{ document.download_count }}</dd>
-
-                        <dt class="col-6">Total Accesses:</dt>
-                        <dd class="col-6">{{ document.access_count }}</dd>
-
-                        <dt class="col-6">Shares:</dt>
-                        <dd class="col-6">{{ share_logs|length }}</dd>
-                    </dl>
-                </div>
-            </div>
-
-            <!-- Sharing Status -->
-            {% if document.is_public %}
-            <div class="card border-primary mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-globe"></i> Public Sharing</h5>
-                </div>
-                <div class="card-body">
-                    <p><strong>This document is publicly shared</strong></p>
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" readonly
-                               value="{{ request.scheme }}://{{ request.get_host }}{% url 'documents:public_share' document.share_token %}"
-                               id="shareLink">
-                        <button class="btn btn-outline-secondary" type="button"
-                                onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value)">
-                            <i class="fas fa-copy"></i> Copy
-                        </button>
+            <div class="row">
+                <!-- Left Column - Main Info -->
+                <div class="col-lg-8">
+                    <!-- Preview Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-eye"></i> Preview</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            {% if document.file_type in 'png,jpg,jpeg,gif' %}
+                            <!-- Image Preview -->
+                            <img src="{{ document.file.url }}" alt="{{ document.title }}" class="img-fluid" style="max-height: 500px;">
+                            {% elif document.file_type == 'pdf' %}
+                            <!-- PDF Preview -->
+                            <iframe src="{{ document.file.url }}" width="100%" height="600px" style="border: 1px solid #ddd;">
+                                Your browser does not support PDF preview.
+                            </iframe>
+                            {% elif document.file_type == 'txt' %}
+                            <!-- Text Preview -->
+                            <div class="text-start bg-light p-3" style="max-height: 500px; overflow-y: auto;">
+                                <pre>{{ document.file.read|truncatewords:500 }}</pre>
+                            </div>
+                            {% else %}
+                            <!-- Generic File Icon -->
+                            <div class="py-5">
+                                <i class="fas fa-file-{{ document.file_type }} fa-5x text-muted mb-3"></i>
+                                <p class="text-muted">Preview not available for this file type</p>
+                                <a href="{% url 'documents:document_download' document.id %}" class="btn btn-primary">
+                                    <i class="fas fa-download"></i> Download to View
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
-                    {% if document.share_expiry %}
-                    <p class="small text-muted mb-2">
-                        <i class="fas fa-clock"></i> Expires {{ document.share_expiry|naturaltime }}
-                    </p>
+
+                    <!-- File Metadata -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> File Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-5">Original Name:</dt>
+                                        <dd class="col-sm-7">{{ document.file_original_name }}</dd>
+
+                                        <dt class="col-sm-5">File Type:</dt>
+                                        <dd class="col-sm-7">
+                                            <span class="badge bg-secondary">{{ document.get_file_type_display }}</span>
+                                        </dd>
+
+                                        <dt class="col-sm-5">Original Size:</dt>
+                                        <dd class="col-sm-7">{{ document.original_file_size|filesizeformat }}</dd>
+
+                                        <dt class="col-sm-5">Current Size:</dt>
+                                        <dd class="col-sm-7">{{ document.file_size_display }}</dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-5">Uploaded:</dt>
+                                        <dd class="col-sm-7">{{ document.upload_date|date:"M d, Y H:i" }}</dd>
+
+                                        <dt class="col-sm-5">Last Modified:</dt>
+                                        <dd class="col-sm-7">{{ document.last_modified|naturaltime }}</dd>
+
+                                        <dt class="col-sm-5">Last Accessed:</dt>
+                                        <dd class="col-sm-7">
+                                            {% if document.last_accessed %}
+                                            {{ document.last_accessed|naturaltime }}
+                                            {% else %}
+                                            <span class="text-muted">Never</span>
+                                            {% endif %}
+                                        </dd>
+
+                                        <dt class="col-sm-5">Downloads:</dt>
+                                        <dd class="col-sm-7">{{ document.download_count }}</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compression Info -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-compress"></i> Compression Details</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if document.is_compressed %}
+                            <div class="row">
+                                <div class="col-md-3 text-center">
+                                    <h3 class="text-success">{{ document.compression_ratio_percentage }}%</h3>
+                                    <small class="text-muted">Compression Ratio</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <h3 class="text-success">{{ document.compression_savings|filesizeformat }}</h3>
+                                    <small class="text-muted">Space Saved</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <h3>{{ document.compression_algorithm|upper }}</h3>
+                                    <small class="text-muted">Algorithm</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <h3>
+                                        {% if document.compression_timestamp %}
+                                        {{ document.compression_timestamp|timesince }}
+                                        {% endif %}
+                                    </h3>
+                                    <small class="text-muted">Compressed</small>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <p class="mb-1"><strong>Status:</strong>
+                                        <span class="badge bg-success">{{ document.get_compression_status_display }}</span>
+                                    </p>
+                                    <p class="mb-1"><strong>Checksum (Original):</strong>
+                                        <code class="small">{{ document.original_file_checksum }}</code>
+                                    </p>
+                                    <p class="mb-0"><strong>Checksum (Compressed):</strong>
+                                        <code class="small">{{ document.compressed_file_checksum }}</code>
+                                    </p>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                {% if document.compression_status == 'pending' %}
+                                This document is queued for compression.
+                                {% elif document.compression_status == 'compressing' %}
+                                This document is currently being compressed...
+                                {% elif document.compression_status == 'failed' %}
+                                Compression failed for this document.
+                                {% else %}
+                                This document is not compressed.
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Share History -->
+                    {% if share_logs %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-share-alt"></i> Share History</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Recipient</th>
+                                            <th>Shared</th>
+                                            <th>Status</th>
+                                            <th>Accesses</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in share_logs %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-{% if log.share_method == 'email' %}envelope{% elif log.share_method == 'whatsapp' %}whatsapp{% else %}link{% endif %}"></i>
+                                                    {{ log.get_share_method_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ log.recipient }}</td>
+                                            <td>{{ log.shared_at|naturaltime }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if log.status == 'delivered' %}success{% elif log.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                                                    {{ log.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ log.access_count }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                     {% endif %}
-                    <button type="button" class="btn btn-sm btn-outline-danger w-100"
-                            onclick="if(confirm('Revoke public access?')) { /* HTMX revoke */ }">
-                        <i class="fas fa-times"></i> Revoke Access
-                    </button>
+                </div>
+
+                <!-- Right Column - Actions & Organization -->
+                <div class="col-lg-4">
+                    <!-- Quick Actions -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-warning"
+                                        hx-post="{% url 'documents:toggle_favorite' document.id %}"
+                                        hx-target="#favorite-status"
+                                        hx-swap="outerHTML">
+                                    <i class="fas fa-star"></i>
+                                    {% if document.is_favorite %}Remove from{% else %}Add to{% endif %} Favorites
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#shareModal">
+                                    <i class="fas fa-share-alt"></i> Share Document
+                                </button>
+                                <a href="{% url 'documents:document_preview' document.id %}" class="btn btn-outline-info">
+                                    <i class="fas fa-eye"></i> Full Preview
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Organization -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-tags"></i> Organization</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Category</h6>
+                            {% if document.category %}
+                            <span class="badge mb-3" style="background-color: {{ document.category.color }};">
+                                <i class="fas fa-{{ document.category.icon }}"></i>
+                                {{ document.category.name }}
+                            </span>
+                            {% else %}
+                            <p class="text-muted mb-3">Documents</p>
+                            {% endif %}
+
+                            <h6>Tags</h6>
+                            {% if document.tags.all %}
+                            <div class="mb-3">
+                                {% for tag in document.tags.all %}
+                                <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted mb-3">No tags</p>
+                            {% endif %}
+
+                            <div id="favorite-status">
+                                <h6>Status</h6>
+                                <p>
+                                    {% if document.is_favorite %}
+                                    <i class="fas fa-star text-warning"></i> Not a favorite
+                                    {% else %}
+                                    <i class="far fa-star text-muted"></i> Not a favorite
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Statistics</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-6">Views:</dt>
+                                <dd class="col-6">{{ document.view_count }}</dd>
+
+                                <dt class="col-6">Downloads:</dt>
+                                <dd class="col-6">{{ document.download_count }}</dd>
+
+                                <dt class="col-6">Total Accesses:</dt>
+                                <dd class="col-6">{{ document.access_count }}</dd>
+
+                                <dt class="col-6">Shares:</dt>
+                                <dd class="col-6">{{ share_logs|length }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Sharing Status -->
+                    {% if document.is_public %}
+                    <div class="card border-primary mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-globe"></i> Public Sharing</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>This document is publicly shared</strong></p>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" readonly
+                                       value="{{ request.scheme }}://{{ request.get_host }}{% url 'documents:public_share' document.share_token %}"
+                                       id="shareLink">
+                                <button class="btn btn-outline-secondary" type="button"
+                                        onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value)">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            {% if document.share_expiry %}
+                            <p class="small text-muted mb-2">
+                                <i class="fas fa-clock"></i> Expires {{ document.share_expiry|naturaltime }}
+                            </p>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-danger w-100"
+                                    onclick="if(confirm('Revoke public access?')) { /* HTMX revoke */ }">
+                                <i class="fas fa-times"></i> Revoke Access
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
         </div>
-    </div>
+    </main>
 </div>
 
 <!-- Share Modal -->
@@ -453,6 +711,9 @@
         </div>
     </div>
 </div>
+
+<!-- Sidebar Toggle Script -->
+<script src="{% static 'js/drive/core.js' %}"></script>
 
 <!-- HTMX -->
 <script src="https://unpkg.com/htmx.org@1.9.10"></script>
