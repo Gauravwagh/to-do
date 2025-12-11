@@ -79,10 +79,10 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Return categories for current user only"""
+        # Note: document_count is already a @property on the model
+        # No need to annotate here - causes conflicts with property setter
         return DocumentCategory.objects.filter(
             user=self.request.user
-        ).annotate(
-            document_count=Count('documents')
         )
 
     @action(detail=False, methods=['get'])
@@ -197,13 +197,9 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
         logger = logging.getLogger(__name__)
 
         try:
-            # Get folder ID first (from annotated queryset)
-            folder_obj = self.get_object()
-            folder_id = folder_obj.id
-
-            # Fetch clean instance without annotations to avoid property setter issues
-            folder = DocumentCategory.objects.get(id=folder_id, user=request.user)
+            folder = self.get_object()
             folder_name = folder.name
+            folder_id = folder.id
 
             logger.info(f"Attempting to delete folder: {folder_name} (ID: {folder_id})")
 
@@ -224,7 +220,6 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
             Document.objects.filter(category_id__in=all_folder_ids).update(category=None)
 
             # Delete the folder (CASCADE will delete all descendant folders)
-            # Use the clean instance
             folder.delete()
 
             logger.info(f"Successfully deleted folder: {folder_name}")
