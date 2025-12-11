@@ -251,6 +251,29 @@ function confirmAction(message, callback) {
 }
 
 /**
+ * Show custom delete confirmation modal
+ */
+function showDeleteConfirmation(message, onConfirm) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const messageEl = document.getElementById('deleteConfirmMessage');
+
+    messageEl.textContent = message;
+
+    // Remove previous listeners by cloning button
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    // Add new listener
+    newConfirmBtn.addEventListener('click', () => {
+        modal.hide();
+        onConfirm();
+    });
+
+    modal.show();
+}
+
+/**
  * Get current folder ID from URL
  */
 function getCurrentFolderId() {

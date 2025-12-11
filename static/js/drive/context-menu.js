@@ -402,29 +402,6 @@ async function deleteDocument(documentId) {
 }
 
 /**
- * Show custom delete confirmation modal
- */
-function showDeleteConfirmation(message, onConfirm) {
-    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-    const confirmBtn = document.getElementById('confirmDeleteBtn');
-    const messageEl = document.getElementById('deleteConfirmMessage');
-
-    messageEl.textContent = message;
-
-    // Remove previous listeners
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-    // Add new listener
-    newConfirmBtn.addEventListener('click', () => {
-        modal.hide();
-        onConfirm();
-    });
-
-    modal.show();
-}
-
-/**
  * Background context menu (right-click on empty space)
  */
 document.addEventListener('DOMContentLoaded', () => {
