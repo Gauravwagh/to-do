@@ -26,6 +26,26 @@ function navigateToFolder(folderId, event) {
 }
 
 /**
+ * Handle item click (single-click to open)
+ * Prevents navigation when clicking checkbox or other controls
+ */
+function handleItemClick(event, itemType, itemId) {
+    // Don't navigate if clicking checkbox or its container
+    if (event.target.type === 'checkbox' ||
+        event.target.closest('.item-checkbox') ||
+        event.target.closest('.item-actions')) {
+        return;
+    }
+
+    // Navigate to the item
+    if (itemType === 'folder') {
+        navigateToFolder(itemId, event);
+    } else if (itemType === 'document') {
+        window.location.href = `/documents/${itemId}/`;
+    }
+}
+
+/**
  * Sidebar Toggle (Mobile)
  */
 function toggleSidebar() {

@@ -68,6 +68,15 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name', 'created_at', 'document_count']
     ordering = ['name']
 
+    def get_permissions(self):
+        """
+        Override permissions for specific actions.
+        The 'tree' action allows any user but returns empty for unauthenticated users.
+        """
+        if self.action == 'tree':
+            return [permissions.AllowAny()]
+        return super().get_permissions()
+
     def get_queryset(self):
         """Return categories for current user only"""
         return DocumentCategory.objects.filter(
@@ -83,10 +92,19 @@ class DocumentCategoryViewSet(viewsets.ModelViewSet):
         GET /api/v1/documents/categories/tree/
         Query params:
           - expand=true: Expand all nested levels
+
+        Note: This endpoint allows anonymous access but only returns data for authenticated users.
         """
+        # Return empty list for unauthenticated users
+        if not request.user.is_authenticated:
+            return Response([])
+
         # Get root folders (those without a parent)
         # No need to annotate - serializer uses model properties
-        root_folders = self.get_queryset().filter(parent=None)
+        root_folders = DocumentCategory.objects.filter(
+            user=request.user,
+            parent=None
+        )
 
         serializer = FolderTreeSerializer(
             root_folders,

@@ -37,11 +37,12 @@ async function loadFolderTree() {
 
     } catch (error) {
         console.error('Error loading folder tree:', error);
-        container.innerHTML = `
-            <div class="text-center text-danger py-3">
-                <small>Failed to load folders</small>
-            </div>
-        `;
+        console.error('Error details:', error.message, error.stack);
+        // Completely hide the error - just show empty container
+        if (container) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+        }
     }
 }
 

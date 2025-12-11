@@ -237,10 +237,18 @@
     .item-checkbox {
         position: absolute;
         top: 8px;
-        left: 8px;
+        right: 8px;
         opacity: 0;
         transition: opacity 0.2s;
         z-index: 10;
+        background: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
     .folder-card:hover .item-checkbox,
@@ -251,9 +259,10 @@
     }
 
     .item-checkbox input {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         cursor: pointer;
+        margin: 0;
     }
 
     .item-actions {
@@ -626,7 +635,7 @@
                          data-item-id="{{ folder.id }}"
                          data-item-type="folder"
                          draggable="true"
-                         ondblclick="navigateToFolder('{{ folder.id }}', event)"
+                         onclick="handleItemClick(event, 'folder', '{{ folder.id }}')"
                          oncontextmenu="showContextMenu(event, 'folder', '{{ folder.id }}', '{{ folder.name|escapejs }}')">
                         <div class="item-checkbox">
                             <input type="checkbox" onclick="toggleSelection(event, '{{ folder.id }}', 'folder')">
@@ -657,7 +666,7 @@
                          data-item-id="{{ doc.id }}"
                          data-item-type="document"
                          draggable="true"
-                         ondblclick="window.location='{% url 'documents:document_detail' pk=doc.id %}'"
+                         onclick="handleItemClick(event, 'document', '{{ doc.id }}')"
                          oncontextmenu="showContextMenu(event, 'document', '{{ doc.id }}', '{{ doc.title|escapejs }}')">
                         <div class="item-checkbox">
                             <input type="checkbox" onclick="toggleSelection(event, '{{ doc.id }}', 'document')">
