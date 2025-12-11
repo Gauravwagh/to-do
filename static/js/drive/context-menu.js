@@ -279,39 +279,60 @@ async function toggleStar(documentId) {
 }
 
 /**
- * Delete document
+ * Delete document with custom modal confirmation
  */
 async function deleteDocument(documentId) {
-    if (!confirm(`Are you sure you want to delete "${contextMenuTarget.name}"?`)) {
-        return;
-    }
+    showDeleteConfirmation('Are you sure you want to delete 1 item(s)?', async () => {
+        try {
+            showLoading();
 
-    try {
-        showLoading();
+            const response = await fetch(`/api/v1/documents/documents/${documentId}/`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            });
 
-        const response = await fetch(`/api/v1/documents/documents/${documentId}/`, {
-            method: 'DELETE',
-            credentials: 'include',
-            headers: {
-                'X-CSRFToken': getCsrfToken()
+            if (!response.ok) {
+                throw new Error('Failed to delete document');
             }
-        });
 
-        if (!response.ok) {
-            throw new Error('Failed to delete document');
+            showToast('Document deleted successfully!', 'success');
+
+            // Refresh page after short delay
+            setTimeout(() => window.location.reload(), 500);
+
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            showToast('Error: ' + error.message, 'danger');
+        } finally {
+            hideLoading();
         }
+    });
+}
 
-        showToast('Document deleted successfully!', 'success');
+/**
+ * Show custom delete confirmation modal
+ */
+function showDeleteConfirmation(message, onConfirm) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const messageEl = document.getElementById('deleteConfirmMessage');
 
-        // Refresh page after short delay
-        setTimeout(() => window.location.reload(), 500);
+    messageEl.textContent = message;
 
-    } catch (error) {
-        console.error('Error deleting document:', error);
-        showToast('Error: ' + error.message, 'danger');
-    } finally {
-        hideLoading();
-    }
+    // Remove previous listeners
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    // Add new listener
+    newConfirmBtn.addEventListener('click', () => {
+        modal.hide();
+        onConfirm();
+    });
+
+    modal.show();
 }
 
 /**

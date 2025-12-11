@@ -343,43 +343,41 @@ async function renameFolder(folderId, newName) {
 }
 
 /**
- * Delete folder via API
+ * Delete folder via API with custom modal confirmation
  */
 async function deleteFolder(folderId, folderName) {
-    if (!confirm(`Are you sure you want to delete "${folderName}" and all its contents?`)) {
-        return;
-    }
+    showDeleteConfirmation('Are you sure you want to delete 1 item(s)?', async () => {
+        try {
+            showLoading();
 
-    try {
-        showLoading();
+            const response = await fetch(`/api/v1/documents/categories/${folderId}/`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            });
 
-        const response = await fetch(`/api/v1/documents/categories/${folderId}/`, {
-            method: 'DELETE',
-            credentials: 'include',
-            headers: {
-                'X-CSRFToken': getCsrfToken()
+            if (!response.ok) {
+                throw new Error('Failed to delete folder');
             }
-        });
 
-        if (!response.ok) {
-            throw new Error('Failed to delete folder');
+            // Refresh tree
+            await refreshFolderTree();
+
+            // If we're in the deleted folder, navigate to root
+            if (getCurrentFolderId() === folderId) {
+                window.location.href = '/documents/drive/';
+            } else {
+                showToast(`Folder "${folderName}" deleted successfully!`, 'success');
+            }
+
+        } catch (error) {
+            console.error('Error deleting folder:', error);
+            showToast('Error: ' + error.message, 'danger');
+            throw error;
+        } finally {
+            hideLoading();
         }
-
-        // Refresh tree
-        await refreshFolderTree();
-
-        // If we're in the deleted folder, navigate to root
-        if (getCurrentFolderId() === folderId) {
-            window.location.href = '/documents/drive/';
-        } else {
-            showToast(`Folder "${folderName}" deleted successfully!`, 'success');
-        }
-
-    } catch (error) {
-        console.error('Error deleting folder:', error);
-        showToast('Error: ' + error.message, 'danger');
-        throw error;
-    } finally {
-        hideLoading();
-    }
+    });
 }
